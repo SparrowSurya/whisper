@@ -1,7 +1,7 @@
 import sys
 
-from whisper.core import App
+from .app import App
 
 
 app = App(sys.argv[1:])
-app.run()
+app.start()

@@ -1,3 +1,5 @@
+import tkinter.font as tkfont
+
 from whisper.components.base import Container, Label
 
 
@@ -22,6 +24,9 @@ class TopBar(Container):
             text="",
             justify="left",
             anchor="w",
+            bg="#343145",
+            fg="#ffffff",
+            font=tkfont.Font(family="Roboto", size=12, weight="bold"),
         )
         self.title.pack(side="left", fill="x")
 

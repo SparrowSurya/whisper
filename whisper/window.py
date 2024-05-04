@@ -24,7 +24,7 @@ class Window(tk.Tk):
 
     def setup_root(self):
         """Setups the root element of the window."""
-        self.root = Root(self)
+        self.root = Root(self, bg="#252331", padx=2, pady=2)
         self.root.pack(fill=tk.BOTH, expand=tk.TRUE)
 
     def set_title(self, title: str):

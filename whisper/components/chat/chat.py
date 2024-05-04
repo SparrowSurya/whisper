@@ -1,3 +1,4 @@
+import tkinter.font as tkfont
 from typing import Dict, Any
 
 from whisper.core.chat import BaseChat
@@ -21,13 +22,23 @@ class Chat(Container, BaseChat):
         Container.__init__(self, master, *args, **kwargs)
         BaseChat.__init__(self, self.master.app)  # type: ignore
 
-        self.topbar = TopBar(self)
-        self.view = View(self, state="disabled")
-        self.input = InputPanel(self)
+        self.topbar = TopBar(self, bg="#343145")
+        self.view = View(
+            self,
+            state="disabled",
+            bg="#343145",
+            fg="#ffffff",
+            font=tkfont.Font(family="Poppins", size=12, weight="normal"),
+        )
+        self.input = InputPanel(self, bg="#343145")
 
-        self.topbar.pack(fill="x", expand=0)
-        self.view.pack(fill="both", expand=1)
-        self.input.pack(fill="x", expand=0)
+        self.topbar.grid(row=0, column=0, sticky="nsew")
+        self.view.grid(row=1, column=0, sticky="nsew")
+        self.input.grid(row=2, column=0, sticky="nsew")
+
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, minsize=self.input.winfo_height())
+        self.grid_columnconfigure(0, weight=1)
 
         self.input.sendbtn.config(command=self.on_send)
         self.input.textinput.bind("<Return>", self.on_send)

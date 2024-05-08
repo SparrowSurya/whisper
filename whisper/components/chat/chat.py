@@ -22,15 +22,9 @@ class Chat(Container, BaseChat):
         Container.__init__(self, master, *args, **kwargs)
         BaseChat.__init__(self, self.master.app)  # type: ignore
 
-        self.topbar = TopBar(self, bg="#343145")
-        self.view = View(
-            self,
-            state="disabled",
-            bg="#343145",
-            fg="#ffffff",
-            font=tkfont.Font(family="Poppins", size=12, weight="normal"),
-        )
-        self.input = InputPanel(self, bg="#343145")
+        self.topbar = TopBar(self)
+        self.view = View(self)
+        self.input = InputPanel(self)
 
         self.topbar.grid(row=0, column=0, sticky="nsew")
         self.view.grid(row=1, column=0, sticky="nsew")
@@ -59,3 +53,9 @@ class Chat(Container, BaseChat):
             self.view.show_info(msg)
         else:
             self.view.show_message(user, msg)
+
+    @property
+    def _cnf(self) -> Dict[str, Any]:
+        return {
+            "bg": "#343145",
+        }

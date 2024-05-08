@@ -25,9 +25,8 @@ class View(ScrollableContainer):
 
     def _pack(self, widget: tk.Widget):
         """Pack a widget inside."""
-        widget.pack(fill="x", expand=1)
+        widget.pack(fill="x", expand=1, pady=2)
         self._listen_scroll(widget)
-        self.frame.update_idletasks()
         self.scroll_to_bottom()
 
     def _listen_scroll(self, widget: tk.Widget):

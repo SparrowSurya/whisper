@@ -31,6 +31,8 @@ class Message(Container):
         self.head.pack(fill="x", anchor="nw")
         self.body.pack(fill="x", anchor="sw")
 
+        self.body.bind("<Configure>", self.body.wraplength)
+
     @property
     def _cnf(self) -> Dict[str, Any]:
         return {

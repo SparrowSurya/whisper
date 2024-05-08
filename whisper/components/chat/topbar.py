@@ -27,8 +27,6 @@ class TopBar(Container):
             bg="#343145",
             fg="#ffffff",
             font=("Roboto", 14, "bold"),
-            padx=2,
-            pady=2,
         )
         self.title.pack(side="left", fill="x")
 

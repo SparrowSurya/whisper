@@ -1,7 +1,7 @@
 import tkinter.font as tkfont
 from typing import Any, Dict
 
-from whisper.components.base import Container, TextInput, Button
+from whisper.components.base import Container, TextBox, Button
 
 
 class InputPanel(Container):
@@ -16,7 +16,7 @@ class InputPanel(Container):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, cnf=self._cnf, **kwargs)
 
-        self.textinput = TextInput(
+        self.textinput = TextBox(
             self,
             fg="#b8b8b8",
             bg="#252331",
@@ -28,6 +28,8 @@ class InputPanel(Container):
             insertbackground="#b8b8b8",
             insertwidth=2,
             insertborderwidth=0,
+            wrap="word",
+            height=1,
             font=("Roboto", 16, "normal"),
         )
         self.sendbtn = Button(
@@ -44,9 +46,17 @@ class InputPanel(Container):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, minsize=self.sendbtn.winfo_width())
 
+        self.textinput.bind(
+            "<KeyRelease>", lambda event: self.textinput.configure_height(5, event)
+        )
+
+    def get_text(self) -> str:
+        """Text entered."""
+        return self.textinput.get("1.0", "end-1c")
+
     def clear(self):
         """Cleans the text content."""
-        self.textinput.delete("0", "end")
+        self.textinput.delete("1.0", "end")
 
     @property
     def _cnf(self) -> Dict[str, Any]:

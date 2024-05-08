@@ -35,12 +35,11 @@ class Chat(Container, BaseChat):
         self.grid_columnconfigure(0, weight=1)
 
         self.input.sendbtn.config(command=self.on_send)
-        self.input.textinput.bind("<Return>", self.on_send)
         self.input.textinput.focus()
 
     def on_send(self, event=None):
         """Event listener to send message."""
-        text = self.input.textinput.get().strip()
+        text = self.input.get_text().strip()
         if text:
             content = self.create_content(text=text)
             BaseChat.send(self, content)

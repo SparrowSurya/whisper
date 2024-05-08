@@ -26,7 +26,7 @@ class TopBar(Container):
             anchor="w",
             bg="#343145",
             fg="#ffffff",
-            font=("Roboto", 12, "bold"),
+            font=("Roboto", 14, "bold"),
             padx=2,
             pady=2,
         )

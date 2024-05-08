@@ -18,6 +18,7 @@ class Info(Container):
             font=("Roboto", 14, "normal"),
         )
         self.body.pack(fill="x", anchor="center")
+        self.body.bind("<Configure>", self.body.wraplength)
 
     @property
     def _cnf(self) -> Dict[str, Any]:

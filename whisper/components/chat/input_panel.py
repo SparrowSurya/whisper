@@ -1,4 +1,4 @@
-import tkinter.font as tkfont
+import tkinter as tk
 from typing import Any, Dict
 
 from whisper.components.base import Container, TextBox, Button
@@ -32,19 +32,22 @@ class InputPanel(Container):
             height=1,
             font=("Roboto", 16, "normal"),
         )
+        self.send_icon = tk.PhotoImage(file="./whisper/assets/send.png")
         self.sendbtn = Button(
             self,
-            text="send",
-            bg="#096ad9",
-            fg="#ffffff",
-            font=("Roboto", 12, "normal"),
+            image=self.send_icon,
+            compound="center",
+            relief="flat",
+            bg="#252331",
+            activebackground="#252331",
+            bd=0,
         )
 
         self.textinput.grid(row=0, column=0, sticky="nsew")
-        self.sendbtn.grid(row=0, column=1, sticky="nse")
+        self.sendbtn.grid(row=0, column=1, sticky="new")
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, minsize=self.sendbtn.winfo_width())
+        self.grid_columnconfigure(1, minsize=self.sendbtn.winfo_width() + 40)
 
         self.textinput.bind(
             "<KeyRelease>", lambda event: self.textinput.configure_height(5, event)
@@ -61,5 +64,5 @@ class InputPanel(Container):
     @property
     def _cnf(self) -> Dict[str, Any]:
         return {
-            "bg": "#343145",
+            "bg": "#252331",
         }

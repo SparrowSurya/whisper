@@ -44,6 +44,7 @@ class Chat(Container, BaseChat):
             content = self.create_content(text=text)
             BaseChat.send(self, content)
             self.input.clear()
+            self.input.textinput.configure_height(5)
 
     def recv(self, content: Dict[str, Any]):
         """Shows the message on the chat."""

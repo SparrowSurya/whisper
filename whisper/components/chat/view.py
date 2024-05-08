@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from whisper.components.base import TextBox
 
 
@@ -10,7 +11,7 @@ class View(TextBox):
     """
 
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, *args, cnf=self._cnf, **kwargs)
 
     def format(self, user: str, message: str) -> str:
         """Describes the format of the message to display on chat box."""
@@ -41,3 +42,12 @@ class View(TextBox):
         """Scroll to bottom of the chat."""
         if self.yview()[1] == 1.0 or force:
             self.yview_moveto(1.0)
+
+    @property
+    def _cnf(self) -> Dict[str, Any]:
+        return {
+            "state": "disabled",
+            "bg": "#343145",
+            "fg": "#ffffff",
+            "font": ("Poppins", 12, "normal"),
+        }

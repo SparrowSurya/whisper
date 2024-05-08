@@ -1,4 +1,4 @@
-import tkinter.font as tkfont
+from typing import Dict, Any
 
 from whisper.components.base import Container, Label
 
@@ -17,7 +17,7 @@ class TopBar(Container):
     """
 
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, *args, cnf=self._cnf, **kwargs)
 
         self.title = Label(
             self,
@@ -26,10 +26,18 @@ class TopBar(Container):
             anchor="w",
             bg="#343145",
             fg="#ffffff",
-            font=tkfont.Font(family="Roboto", size=12, weight="bold"),
+            font=("Roboto", 12, "bold"),
+            padx=2,
+            pady=2,
         )
         self.title.pack(side="left", fill="x")
 
     def set_title(self, title: str):
         """Sets the title on header."""
         self.title.config(text=title)
+
+    @property
+    def _cnf(self) -> Dict[str, Any]:
+        return {
+            "bg": "#343145",
+        }

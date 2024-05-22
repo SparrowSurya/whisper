@@ -4,6 +4,7 @@ import concurrent.futures
 from argparse import ArgumentParser
 from typing import Sequence, Callable, Coroutine, Any
 
+from .stream import Stream
 from .manager import Manager
 
 
@@ -16,8 +17,8 @@ class BaseApp:
         self.stop_fut = concurrent.futures.Future()
         self.exit_fut = concurrent.futures.Future()
         self.queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self.stream = Stream()
         self.manager = Manager(self)
-        self.__connected = False
 
     def run(self):
         """Start the event loop."""
@@ -29,10 +30,10 @@ class BaseApp:
     async def _run_forever(self):
         """Lifetime of the event loop. All the tasks should be done inside it."""
         self.loop_fut.set_result(asyncio.get_running_loop())
-        await self.connect(host=self.args.hostip, port=self.args.port, loop=self.loop)
+        await self.stream.open(host=self.args.hostip, port=self.args.port, loop=self.loop)
         self.init_tasks()
         await asyncio.wrap_future(self.stop_fut)
-        await self.disconnect()
+        await self.stream.close()
 
     def stop(self):
         """This closes the event loop."""
@@ -40,50 +41,6 @@ class BaseApp:
             self.stop_fut.set_result(None)
         except concurrent.futures.InvalidStateError:
             pass
-
-    async def connect(
-        self, host: str, port: int, loop: asyncio.AbstractEventLoop, **kwargs
-    ):
-        """
-        Open connection with server and initialize the stream objects.
-
-        Arguments:
-        * host - host ip address to connect to.
-        * port - port number.
-        * kwargs - kwargs for `loop.create_connection()`.
-        """
-        if self.__connected:
-            await self.disconnect()
-
-        self.reader = asyncio.StreamReader(limit=2**16, loop=loop)
-        self._protocol = asyncio.StreamReaderProtocol(self.reader, loop=loop)
-        self.transport, _ = await loop.create_connection(
-            lambda: self._protocol, host, port, **kwargs
-        )
-        self.writer = asyncio.StreamWriter(
-            self.transport, self._protocol, self.reader, loop
-        )
-        self.__connected = True
-
-    async def disconnect(self):
-        """Close connection and stream objects."""
-        if self.__connected:
-            self.__connected = False
-            self.writer.close()
-            await self.writer.wait_closed()
-            del self.writer, self.reader, self._protocol, self.transport
-
-    def init_tasks(self):
-        """Task that need to run as soon as connection establishes."""
-
-    async def _read(self, size: int) -> bytes:
-        """Read the data received from server."""
-        return await self.reader.read(size)
-
-    async def _write(self, data: bytes):
-        """Sends the data to server."""
-        self.writer.write(data)
-        await self.writer.drain()
 
     def create_task(
         self,
@@ -116,3 +73,6 @@ class BaseApp:
         )
 
         return parser
+
+    def init_tasks(self):
+        """Task that need to run as soon as connection establishes."""

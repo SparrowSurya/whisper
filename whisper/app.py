@@ -47,7 +47,7 @@ class App(Window, BaseApp):
         """Coroutine that reads data from server."""
         try:
             while not self.__exiting:
-                data = await self._read(4096)
+                data = await self.stream.read(4096)
                 if data:
                     self.manager.dispatch(data)
         except asyncio.CancelledError:
@@ -62,14 +62,14 @@ class App(Window, BaseApp):
             "type": "set-name",
             "name": self.args.user,
         }
-        self.create_task(self._write(self.manager.serialize(set_name)))
+        self.create_task(self.stream.write(self.manager.serialize(set_name)))
 
     def close(self):
         """Closes the application."""
         if not self.__exiting:
             exit_msg = {"type": "exit"}
             self.create_task(
-                self._write(self.manager.serialize(exit_msg)),
+                self.stream.write(self.manager.serialize(exit_msg)),
                 on_done=lambda fut: self.stop(),
             )
             self.__exiting = True

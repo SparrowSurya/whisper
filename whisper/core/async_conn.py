@@ -1,7 +1,7 @@
 import asyncio
 
 
-class Stream:
+class AsyncConn:
     """
     This provides an asynchronous interface to read and write to
     asyncio streams.
@@ -33,12 +33,8 @@ class Stream:
 
         reader = asyncio.StreamReader(limit=2**16, loop=loop)
         proto = asyncio.StreamReaderProtocol(reader, loop=loop)
-        transport, _ = await loop.create_connection(
-            lambda: proto, host, port, **kwargs
-        )
-        writer = asyncio.StreamWriter(
-            transport, proto, reader, loop
-        )
+        transport, _ = await loop.create_connection(lambda: proto, host, port, **kwargs)
+        writer = asyncio.StreamWriter(transport, proto, reader, loop)
         self._create(reader=reader, writer=writer, proto=proto, transport=transport)
 
     async def close(self):

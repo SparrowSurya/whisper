@@ -26,7 +26,7 @@ class Manager:
     def send(self, content: Dict[str, Any]):
         """Callback made by the chat ui to send message out to server."""
         data = self.serialize(content)
-        self.app.create_task(self.app.stream.write(data))
+        self.app.create_task(self.app.conn.write(data))
 
     def serialize(self, content: Dict[str, Any]) -> bytes:
         """Json object serializer."""

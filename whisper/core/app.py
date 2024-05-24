@@ -4,7 +4,7 @@ import concurrent.futures
 from argparse import ArgumentParser
 from typing import Sequence, Callable, Coroutine, Any
 
-from .stream import Stream
+from .async_conn import AsyncConn
 from .manager import Manager
 
 
@@ -17,7 +17,7 @@ class BaseApp:
         self.stop_fut = concurrent.futures.Future()
         self.exit_fut = concurrent.futures.Future()
         self.queue: asyncio.Queue[bytes] = asyncio.Queue()
-        self.stream = Stream()
+        self.conn = AsyncConn()
         self.manager = Manager(self)
 
     def run(self):
@@ -30,10 +30,10 @@ class BaseApp:
     async def _run_forever(self):
         """Lifetime of the event loop. All the tasks should be done inside it."""
         self.loop_fut.set_result(asyncio.get_running_loop())
-        await self.stream.open(host=self.args.hostip, port=self.args.port, loop=self.loop)
+        await self.conn.open(host=self.args.hostip, port=self.args.port, loop=self.loop)
         self.init_tasks()
         await asyncio.wrap_future(self.stop_fut)
-        await self.stream.close()
+        await self.conn.close()
 
     def stop(self):
         """This closes the event loop."""

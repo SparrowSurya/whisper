@@ -1,11 +1,11 @@
 import tkinter as tk
 from typing import Any, Dict
 
-from whisper.components.base import Container
-from whisper.components.chat import Chat
+from .widgets.frame import Frame
+from .chat import Chat
 
 
-class Root(Container):
+class Root(Frame):
     """Root widget of the application."""
 
     def __init__(self, master, *args, **kwargs):

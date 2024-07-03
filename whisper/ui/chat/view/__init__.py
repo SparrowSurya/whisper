@@ -1,27 +1,27 @@
 import tkinter as tk
 from typing import Any, Dict
 
-from whisper.components.base import ScrollableContainer
+from whisper.ui.widgets import ScrollableFrame
 from .message import Message
 from .info import Info
 
 
-class View(ScrollableContainer):
-    """Chat view. Contains chat messages."""
+class View(ScrollableFrame):
+    """It displays various kinds of messages in chat."""
 
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, cnf=self._cnf, **kwargs)
-        self.frame.config(cnf=self._cnf)
-        self._canvas.config(bg=self.frame.cget("bg"))
-        self._listen_scroll(self.frame)
+        self._frame.config(cnf=self._cnf)
+        self._canvas.config(bg=self._frame.cget("bg"))
+        self._listen_scroll(self._frame)
 
     def show_message(self, user: str, message: str):
         """Message sent by user."""
-        self._pack(Message(self.frame, username=user, message=message))
+        self._pack(Message(self._frame, username=user, message=message))
 
     def show_info(self, info: str):
         """Message to inform everyone."""
-        self._pack(Info(self.frame, info=info))
+        self._pack(Info(self._frame, info=info))
 
     def _pack(self, widget: tk.Widget):
         """Pack a widget inside."""

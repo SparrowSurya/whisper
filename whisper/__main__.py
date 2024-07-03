@@ -1,7 +1,27 @@
 import sys
+import asyncio
 
-from .app import App
+from whisper.parser import parser
 
 
-app = App(sys.argv[1:])
-app.start()
+argv = sys.argv[1:]
+obj = parser.parse_args(argv)
+
+if obj.command == "client":
+    from .client import ClientApp
+
+    client = ClientApp(
+        host=obj.host,
+        port=obj.port,
+        username=obj.user,
+    )
+    client.run()
+
+elif obj.command == "server":
+    from .server import Server
+
+    server = Server(
+        host=obj.host,
+        port=obj.port,
+    )
+    asyncio.run(server.run())

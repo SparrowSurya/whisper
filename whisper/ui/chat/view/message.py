@@ -1,9 +1,9 @@
 from typing import Any, Dict
-from whisper.components.base import Container, Label
+from whisper.ui.widgets import Frame, Label
 
 
-class Message(Container):
-    """Text Message in the chat."""
+class Message(Frame):
+    """Text message from a user in chat."""
 
     def __init__(self, master, *args, username: str, message: str, **kwargs):
         super().__init__(master, *args, cnf=self._cnf, **kwargs)
@@ -31,7 +31,11 @@ class Message(Container):
         self.head.pack(fill="x", anchor="nw")
         self.body.pack(fill="x", anchor="sw")
 
-        self.body.bind("<Configure>", self.body.wraplength)
+        self.body.bind(
+            "<Configure>",
+            lambda e: self.body.config(wraplength=self.body.master.winfo_width()),
+            "+",
+        )
 
     @property
     def _cnf(self) -> Dict[str, Any]:

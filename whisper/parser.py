@@ -1,7 +1,7 @@
-from enum import Enum
-import logging
 import re
+import logging
 import argparse
+from enum import IntEnum
 
 
 class HostAction(argparse.Action):
@@ -33,13 +33,13 @@ class UserAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class LogLevel(Enum):
-    DEBUG = logging.DEBUG
-    INFO = logging.INFO
-    WARNING = logging.WARNING
-    ERROR = logging.ERROR
-    CRITICAL = logging.CRITICAL
-
+log_levels = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
 
 
 parser = argparse.ArgumentParser(
@@ -76,10 +76,10 @@ server_parser.add_argument(
 server_parser.add_argument(
     "-g", "--log",
     metavar="LOG",
-    type=LogLevel,
-    choices=tuple(LogLevel),
+    type=str,
+    choices=log_levels.keys(),
     required=False,
-    default=LogLevel.INFO,
+    default="info",
     help="logging level",
 )
 
@@ -116,9 +116,9 @@ client_parser.add_argument(
 client_parser.add_argument(
     "-g", "--log",
     metavar="LOG",
-    type=LogLevel,
-    choices=tuple(LogLevel),
+    type=str,
+    choices=log_levels.keys(),
     required=False,
-    default=LogLevel.INFO,
+    default="info",
     help="logging level",
 )

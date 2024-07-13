@@ -1,15 +1,16 @@
 import sys
 
-from whisper.parser import parser
+from whisper.parser import parser, log_levels
 from whisper.core.logger import stream_handler
 
 argv = sys.argv[1:]
 obj = parser.parse_args(argv)
+stream_handler.setLevel(log_levels[obj.log])
+
 
 if obj.command == "client":
     from .client_app import ClientApp
 
-    stream_handler.setLevel(obj.log)
     client = ClientApp(
         host=obj.host,
         port=obj.port,
@@ -20,7 +21,6 @@ if obj.command == "client":
 if obj.command == "server":
     from .server import Server
 
-    stream_handler.setLevel(obj.log)
     server = Server(
         host=obj.host,
         port=obj.port,

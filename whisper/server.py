@@ -1,138 +1,170 @@
 import asyncio
-from typing import Tuple, List
+from typing import Dict, List
 
-from .core.client_handler import ConnHandle
-from .core.streamcodec import StreamEncoder, StreamDecoder, Message
+from .core import EventThread, StreamEncoder, StreamDecoder
+from .core.server import BaseServer, ConnectionHandle, ServerConnection
+from .core.logger import logger
 
 
-class Server:
-    """Asynchronous Chat Server."""
+# TODO - seperate thread to listen for keyboard interrupt when closing server.
+class Server(EventThread, BaseServer):
+    """Chat server backend.
 
-    def __init__(self, host: str, port: int):
+    It manages the clients connected to the server and various kinds of
+    requests coming from connections.
+    """
+
+    def __init__(self,
+        host: str,
+        port: int,
+        encoding: str = "utf-8",
+        chunk_size: int = 1024,
+        connection: ServerConnection | None = None
+    ):
         """
+        Initialises the server settings.
+
         Arguments:
-        * host - server's ip address
-        * port - port number
+        * host - ip address of the server.
+        * port - port address.
+        * encoding - encoding used by the server.
+        * chunk_size - amount of data to read from connection at a time.
+        * connection - server connection manager object.
         """
+        BaseServer.__init__(self, connection)
+        EventThread.__init__(self)
         self.host = host
         self.port = port
-        self.server: asyncio.Server | None = None
-        self.encoding = "utf-8"
-        self.conns: List[ConnHandle] = []
-        self.chunk_size = 1024
+        self.encoding = encoding
+        self.chunk_size = chunk_size
 
-    @property
-    def is_serving(self) -> bool:
-        """Is server running."""
-        if self.server is None:
-            return False
-        return self.server.is_serving()
+        self.clients: List[ConnectionHandle] = []
+        self.requests = {
+            "hello": self.hello_request,
+            "set-name": self.set_name_request,
+            "exit": self.exit_request,
+            "message": self.message_request,
+        }
 
-    @property
-    def address(self) -> Tuple[str, int]:
-        """Address of the server."""
-        if self.server is None:
-            raise RuntimeError("Server is not running.")
-        return self.server.sockets[0].getsockname()
+    async def listen(self):
+        """
+        Coroutine listening incoming requests. The connection is then
+        passed to `handle` method which serves the connection.
+        """
+        logger.info("Listening for new connections ...")
+        while True:
+            try:
+                conn = await self.accept()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.exception("Exception while listening connections")
+            else:
+                self.schedule(self.handle(conn))
+        logger.info("Stopped listening for new connections.")
 
-    def register(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ) -> ConnHandle:
-        """Register the connection and provides a Handler to it."""
-        conn = ConnHandle(reader=reader, writer=writer)
-        self.conns.append(conn)
-        return conn
+    def register(self, conn: ConnectionHandle):
+        """Register the connection."""
+        self.clients.append(conn)
 
-    async def unregister(self, conn: ConnHandle):
-        """Unregister the connection handler."""
-        conn.writer.close()
-        await conn.writer.wait_closed()
-        self.conns.remove(conn)
+    def unregister(self, conn: ConnectionHandle):
+        """Unregister the connection after closing it."""
+        self.close(conn)
+        self.clients.remove(conn)
 
-    async def handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        """Handle newly connected client."""
-        conn = self.register(reader=reader, writer=writer)
+    async def serve(self, conn: ConnectionHandle):
+        """Coroutine listening the incoming data from connection and
+        processing the request."""
+        logger.info(f"Started serving: {conn.address}")
         decoder = StreamDecoder()
-
         try:
-            while conn.run:
-                if (data := await conn.read(self.chunk_size)) == b"":
+            while not conn.close:
+                data = await self.read(conn, self.chunk_size)
+                if data == b"":
+                    logger.info(f"Received empty bytes from {conn.address}")
                     break
-                if (obj := decoder.decode(data)) is not None:
-                    await self.process(obj, conn)
+                if request := decoder.decode(data):
+                    await self.recv(conn, **request)
         except asyncio.CancelledError:
             pass
-        except Exception as error:
-            pass
+        except Exception:
+            logger.exception(f"Caught error while serving {conn.address}")
         finally:
-            conn.writer.close()
-            await conn.writer.wait_closed()
-            self.conns.remove(conn)
+            logger.info(f"Stopped serving {conn.address}")
 
-    async def broadcast(self, data: bytes):
-        """Send the data to each connection."""
-        for conn in self.conns:
-            await conn.write(data)
+    async def handle(self, conn: ConnectionHandle):
+        """Handle newly connected connection."""
+        self.register(conn)
+        await self.serve(conn)
+        self.unregister(conn)
 
-    async def process(self, obj: object, conn: ConnHandle):
-        """This processes the incoming request from connection."""
-        kwargs = obj._asdict()  # type: ignore
+    async def recv(self, conn: ConnectionHandle, **kwargs):
+        """Process the request received from connection."""
         kind = kwargs.pop("kind")
-
-        if kind == "set-name":
-            await self.process_name(conn, kwargs["name"])
-        elif kind == "exit":
-            await self.process_exit(conn)
-        elif kind == "message":
-            await self.process_message(conn, kwargs["text"])
-
-    async def process_name(self, conn: ConnHandle, new_name: str) -> object:
-        """Responds the request to change name."""
-        old_name = conn.username
-        conn.insert("username", new_name)
-
-        if old_name is not None:
-            text = f"{old_name} changed to {new_name}!"
+        if func := self.requests.get(kind, None):
+            if response := func(conn, **kwargs):
+                logger.debug(f"Received '{kind}' request from {conn.address} kwargs: {kwargs}")
+                await self.send(**response)
         else:
-            text = f"{new_name} joined!"
+            logger.warning(f"Unknown 'kind': {kind}")
 
-        response = Message.message(
-            text=text,
-            user=None,
-        )
-        encoder = StreamEncoder(response)
-        await self.broadcast(encoder.encode(self.encoding))
+    async def send(self, **response):
+        """Send the data to allowaed connections."""
+        logger.debug(f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve]}")
+        encoder = StreamEncoder(**response)
+        data = encoder.encode(self.encoding)
+        for conn in self.clients:
+            if conn.serve:
+                await super().write(conn, data)
 
-    async def process_exit(self, conn: ConnHandle) -> object | None:
-        """Responds the request to exit."""
-        conn.run = False
-        if conn.username is None:
+    def hello_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
+        """Response for `hello` request."""
+        response = self.set_name_request(conn, **kwargs)
+        conn.serve = True
+        return response
+
+    def set_name_request(self, conn: ConnectionHandle, name: str, **kwargs) -> Dict:
+        """Response for 'set-name' request."""
+        old_name = conn.username
+        conn.data["username"] = name
+
+        return {
+            "kind": "message",
+            "text": f"{old_name} renamed to {name}!" if old_name else f"{name} joined!",
+            "user": None,
+        }
+
+    def exit_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
+        """Response for `exit` request."""
+        conn.close = True
+        if not conn.serve:
             return
 
-        text = f"{conn.username} exited"
-        response = Message.message(
-            user=None,
-            text=text,
-        )
-        encoder = StreamEncoder(response)
-        await self.broadcast(encoder.encode(self.encoding))
+        return {
+            "kind": "message",
+            "user": None,
+            "text": f"{conn.username} exited!",
+        }
 
-    async def process_message(self, conn: ConnHandle, text: str) -> object | None:
-        """Responds the request to send message."""
-        name = conn.username
-        if name is None:
-            return
+    def message_request(self, conn: ConnectionHandle, text: str, **kwargs) -> Dict | None:
+        """Response for `message` request."""
+        if not conn.serve:
+            return None
 
-        response = Message.message(
-            user=conn.username,
-            text=text,
-        )
-        encoder = StreamEncoder(response)
-        await self.broadcast(encoder.encode(self.encoding))
+        return {
+            "kind": "message",
+            "user": conn.username,
+            "text": text,
+        }
 
-    async def run(self):
-        """Run chat server."""
-        self.server = await asyncio.start_server(self.handle, self.host, self.port)
-        async with self.server:
-            await self.server.serve_forever()
-        self.server = None
+    async def init_main(self):
+        self.start_server(self.host, self.port)
+        self.on_finish(self.connection.stop)
+        await super().init_main()
+
+    async def exit_main(self):
+        self.stop_server()
+        await super().exit_main()
+
+    def init_coro(self):
+        self.schedule(self.listen())

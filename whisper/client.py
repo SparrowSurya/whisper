@@ -1,155 +1,96 @@
 import asyncio
-import threading
-from typing import Self
+import concurrent.futures
+from typing import Callable
 
-from .core.client_connection import ClientConnection
-from .core.streamcodec import StreamEncoder, StreamDecoder, Message
+from .core.client import BaseClient
+from .core.streamcodec import StreamEncoder, StreamDecoder
 from .core.event_thread import EventThread
-from .ui.window import Window
+from .core.logger import logger
 
 
-class ClientApp(EventThread, Window):
-    """Client side tkinter based GUI.
+class Client(EventThread, BaseClient):
+    """The class provides the client backend functions."""
 
-    The app contains refrence to itself `app` and should be passed to
-    components down the root component.
-    """
-
-    def __init__(self, host: str, port: int, username: str):
+    def __init__(self, host: str, port: int, username: str, **kwargs):
         """
         Arguments:
-        * host - server hostname.
+        * host - server host address.
         * port - server port address.
         * username - client username.
         """
+        BaseClient.__init__(self, None)
         EventThread.__init__(self)
-        Window.__init__(self)
-
         self.host = host
         self.port = port
         self.username = username
         self.encoding = "utf-8"
-        self.__exiting = False
-        self.conn = ClientConnection()
+        self.chunk_size = 1024
+        self.response = {
+            "message": self.show_message,
+            "set-name": self.update_username,
+        }
 
-        self.setup()
-
-    @property
-    def app(self) -> Self:
-        """A refrence to itself."""
-        return self
-
-    def run(self):
-        """Run the client application.."""
-        thread = threading.Thread(target=self.start, name="Event-Thread")
-        try:
-            thread.start()
-            self.mainloop()
-        except BaseException:
-            self.prepare_exit()
-            self.mainloop()
-        finally:
-            thread.join()
-
-    async def send(
-        self,
+    def send(self,
         kind: str,
-        encoding: str = "utf-8",
+        on_done: Callable[[concurrent.futures.Future[None]], None] | None = None,
         **kwargs,
     ):
-        """
-        Send message to the server.
-
-        Arguments:
-        * kind - message or some action.
-        * kwargs - related info.
-        """
-        obj = Message.create(kind, **kwargs)
-        encoder = StreamEncoder(obj)
-        data = encoder.encode(encoding)
-        await self.conn.write(data)
+        """Send serialised message to the server."""
+        kwargs["kind"] = kind
+        logger.debug(f"Sending {kwargs}")
+        encoder = StreamEncoder(**kwargs)
+        data = encoder.encode(self.encoding)
+        self.schedule(self.write(data), on_done)
 
     async def listen(self):
-        """
-        Listens incoming data from server.
-        Content is passed to the `recv` method.
-        """
+        """Listen incoming data from server."""
+        logger.info("Started listening data")
         decoder = StreamDecoder()
         try:
-            while self.conn.is_connected:
-                if (data := await self.conn.read(4096)) == b"":
+            while self.is_connected:
+                # TODO - ConnectionAbortedError when client disconnects
+                data = await self.read(self.chunk_size)
+                if data == b"":
+                    logger.info("Received b''")
                     break
-                obj = decoder.decode(data)
-                if obj is not None:
-                    self.recv(**obj._asdict()) # type: ignore
+                if response := decoder.decode(data):
+                    self.recv(**response)
         except asyncio.CancelledError:
             pass
-        except Exception as err:
-            pass
+        except Exception:
+            logger.exception("Caught error while listening data")
+        finally:
+            logger.info("Stopped listening data")
 
     def recv(self, **kwargs: object):
-        """
-        Reads the message and performs the functionality.
-
-        Arguments:
-        * kwargs - content received from server.
-        """
+        """Reads message and performs action/updation."""
+        logger.debug(f"Received {kwargs}")
         kind = kwargs.pop("kind", None)
-
-        if kind == "message":
-            self.show_message(**kwargs)
-        elif kind == "set-name":
-            self.update_username(**kwargs)
-
-    def setup(self):
-        """Initiate all setup and configurations."""
-        self.setup_root()
-        self.apply_config()
-        self.on_close(self.prepare_exit)
-        self.on_finish(lambda _: self.event_generate(self.DESTORY_EVENT))
+        if func := self.response.get(kind, None):
+            func(**kwargs)
+        else:
+            logger.warning(f"Unknows `{kind}` response from server, kwargs: {kwargs}")
 
     async def init_main(self):
-        """See `EventThread.init_main`."""
-        await self.conn.connect(
+        self.connect(
             host=self.host,
             port=self.port,
             loop=self.loop,
         )
+        await EventThread.init_main(self)
 
     def init_coro(self):
-        """See `EventThread.init_coro`."""
-        self.schedule(self.send("set-name", name=self.username))
+        EventThread.init_coro(self)
         self.schedule(self.listen())
+        self.send("hello", name=self.username)
 
     async def exit_main(self):
-        """See `EventThread.exit_main`."""
-        await self.conn.disconnect()
-
-    def prepare_exit(self):
-        """Close application gracefully."""
-        if not self.__exiting:
-            self.schedule(
-                self.send("exit", self.encoding),
-                on_done=lambda _: self.stop(),
-            )
-            self.__exiting = True
-
-    def apply_config(self):
-        """Apply the configured settings application."""
-        self.set_title("Whisper")
-        self.set_geometry(400, 500, 30, 30)
-        self.root.chat.topbar.set_title(self.username)
-
-    def show_message(self, **kwargs):
-        """
-        Shows the message in chat.
-
-        Arguments:
-        * kwargs - related information.
-        """
-        self.root.chat.show_message(**kwargs)
+        self.disconnect()
+        await EventThread.exit_main(self)
 
     def update_username(self, name: str, **kwargs):
-        """Update the username."""
+        """Updates username."""
         self.username = name
-        self.root.chat.update_username(name)
+
+    def show_message(self, user: str | None, text: str):
+        """Show the message on chat."""

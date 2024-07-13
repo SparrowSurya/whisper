@@ -1,15 +1,15 @@
 import sys
-import asyncio
 
 from whisper.parser import parser
-
+from whisper.core.logger import stream_handler
 
 argv = sys.argv[1:]
 obj = parser.parse_args(argv)
 
 if obj.command == "client":
-    from .client import ClientApp
+    from .client_app import ClientApp
 
+    stream_handler.setLevel(obj.log)
     client = ClientApp(
         host=obj.host,
         port=obj.port,
@@ -17,11 +17,12 @@ if obj.command == "client":
     )
     client.run()
 
-elif obj.command == "server":
+if obj.command == "server":
     from .server import Server
 
+    stream_handler.setLevel(obj.log)
     server = Server(
         host=obj.host,
         port=obj.port,
     )
-    asyncio.run(server.run())
+    server.start()

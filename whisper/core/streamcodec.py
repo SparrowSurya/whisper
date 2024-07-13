@@ -1,32 +1,5 @@
 import json
-from collections import namedtuple
 from typing import Dict, Any
-
-
-class Message:
-    """It provides various methods to create a message object."""
-
-    @staticmethod
-    def create(kind: str, **kwargs) -> object:
-        """Arbitrary message.
-
-        Arguments:
-        * kind - message or action-name.
-        * kwargs - related content.
-        """
-        keys = list(kwargs.keys()) + ["kind"]
-        Object = namedtuple("Object", keys)
-        return Object(kind=kind, **kwargs)
-
-    @staticmethod
-    def message(text: str, **kwargs):
-        """Create a chat message."""
-        return Message.create(kind="message", text=text, **kwargs)
-
-    @staticmethod
-    def action(name: str, **kwargs):
-        """Create an action message."""
-        return Message.create(kind=name, **kwargs)
 
 
 class StreamEncoder:
@@ -44,14 +17,12 @@ class StreamEncoder:
     3. Payload: the content sent out.
     """
 
-    def __init__(self, obj: object, **kwargs):
+    def __init__(self, **kwargs):
         """
         Arguments:
-        * obj: message being encoded.
-        * kwargs: additional arguments.
+        * kwargs: message arguments.
         """
         self.headers: Dict[str, Any] = {}
-        self.obj = obj
         self.kwargs = kwargs
 
     def add_header(self, name: str, desc: Any):
@@ -71,8 +42,7 @@ class StreamEncoder:
 
     def encode(self, encoding: str) -> bytes:
         """Serialize the request into bytes."""
-        request = self.obj._asdict()  # type: ignore
-        payload = self.json_encode(request, encoding)
+        payload = self.json_encode(self.kwargs, encoding)
 
         for name, desc in (
             ("encoding", encoding),
@@ -97,7 +67,7 @@ class StreamDecoder:
         self._header = None
         self._payload = None
 
-    def decode(self, data: bytes) -> object | None:
+    def decode(self, data: bytes) -> Dict | None:
         """
         Process the chunk of data. Returns the content if
         enough data has been collected.
@@ -107,11 +77,11 @@ class StreamDecoder:
         self._process_header()
         self._process_payload()
 
-        obj = None
+        response = None
         if self._payload is not None:
-            obj = Message.create(**self._payload)
+            response = self._payload
             self._hlen = self._header = self._payload = None
-        return obj
+        return response
 
     def _process_proto(self):
         """This processes the initial information."""

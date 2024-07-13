@@ -1,3 +1,5 @@
+from enum import Enum
+import logging
 import re
 import argparse
 
@@ -31,6 +33,15 @@ class UserAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+class LogLevel(Enum):
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
+
+
+
 parser = argparse.ArgumentParser(
     "whisper",
     description="Local self hosted chat platfom",
@@ -62,6 +73,16 @@ server_parser.add_argument(
     help="port number",
 )
 
+server_parser.add_argument(
+    "-g", "--log",
+    metavar="LOG",
+    type=LogLevel,
+    choices=tuple(LogLevel),
+    required=False,
+    default=LogLevel.INFO,
+    help="logging level",
+)
+
 
 client_parser = subparsers.add_parser("client", help="run chat client")
 
@@ -90,4 +111,14 @@ client_parser.add_argument(
     action=UserAction,
     required=True,
     help="username in the chat",
+)
+
+client_parser.add_argument(
+    "-g", "--log",
+    metavar="LOG",
+    type=LogLevel,
+    choices=tuple(LogLevel),
+    required=False,
+    default=LogLevel.INFO,
+    help="logging level",
 )

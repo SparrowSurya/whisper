@@ -3,6 +3,7 @@ import concurrent.futures
 from typing import Callable, Coroutine, Any
 
 
+# Source Refrence - https://gist.github.com/thegamecracks/564bd55af973827f8a05b48f197d5c09
 class EventThread:
     """
     It provieds mechansim for backend asynchronous tasks to run in seperate thread.
@@ -44,7 +45,7 @@ class EventThread:
         self.loop_fut.set_result(asyncio.get_running_loop())
         await self.init_main()
         self.init_coro()
-        await asyncio.wrap_future(self.stop_fut) # blocks until stop() is called
+        await asyncio.wrap_future(self.stop_fut)  # blocks until stop() is called
         await self.exit_main()
 
     def stop(self):

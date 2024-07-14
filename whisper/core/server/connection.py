@@ -90,9 +90,9 @@ class ServerConnection:
         sock: socket.socket,
         n: int,
         loop: asyncio.AbstractEventLoop,
-    ):
+    ) -> Coroutine[Any, Any, bytes]:
         """Reads n bytes from socket."""
-        return await loop.sock_recv(sock, n)
+        return await loop.sock_recv(sock, n)  # type: ignore
 
     async def write(
         self,

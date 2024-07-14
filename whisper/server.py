@@ -1,4 +1,5 @@
 import asyncio
+import threading
 from typing import Dict, List
 
 from .core import EventThread, StreamEncoder, StreamDecoder
@@ -14,12 +15,13 @@ class Server(EventThread, BaseServer):
     requests coming from connections.
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         host: str,
         port: int,
         encoding: str = "utf-8",
         chunk_size: int = 1024,
-        connection: ServerConnection | None = None
+        connection: ServerConnection | None = None,
     ):
         """
         Initialises the server settings.
@@ -103,14 +105,18 @@ class Server(EventThread, BaseServer):
         kind = kwargs.pop("kind")
         if func := self.requests.get(kind, None):
             if response := func(conn, **kwargs):
-                logger.debug(f"Received '{kind}' request from {conn.address} kwargs: {kwargs}")
+                logger.debug(
+                    f"Received '{kind}' request from {conn.address} kwargs: {kwargs}"
+                )
                 await self.send(**response)
         else:
             logger.warning(f"Unknown 'kind': {kind}")
 
     async def send(self, **response):
         """Send the data to allowaed connections."""
-        logger.debug(f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve]}")
+        logger.debug(
+            f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve]}"
+        )
         encoder = StreamEncoder(**response)
         data = encoder.encode(self.encoding)
         for conn in self.clients:
@@ -146,7 +152,9 @@ class Server(EventThread, BaseServer):
             "text": f"{conn.username} exited!",
         }
 
-    def message_request(self, conn: ConnectionHandle, text: str, **kwargs) -> Dict | None:
+    def message_request(
+        self, conn: ConnectionHandle, text: str, **kwargs
+    ) -> Dict | None:
         """Response for `message` request."""
         if not conn.serve:
             return None
@@ -157,14 +165,32 @@ class Server(EventThread, BaseServer):
             "text": text,
         }
 
+    def run(self):
+        """Run the server."""
+        thread = threading.Thread(target=self.start, name="Async-Thread")
+        try:
+            thread.start()
+            logger.info(f"Started {thread.name}")
+
+            # TODO - use signals
+            # example - https://github.com/dask/distributed/blob/main/distributed/_signals.py
+            while thread.is_alive():
+                thread.join(timeout=1)
+
+        except KeyboardInterrupt:
+            logger.info("Caught Keyboard Interrupt - closing the server")
+            self.stop()
+        finally:
+            thread.join()
+            logger.info(f"{thread.name} joined!")
+
     async def init_main(self):
         self.start_server(self.host, self.port)
-        self.on_finish(self.connection.stop)
         await super().init_main()
+
+    def init_coro(self):
+        self.schedule(self.listen())
 
     async def exit_main(self):
         self.stop_server()
         await super().exit_main()
-
-    def init_coro(self):
-        self.schedule(self.listen())

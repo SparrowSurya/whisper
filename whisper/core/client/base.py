@@ -36,7 +36,6 @@ class BaseClient:
         """Set asyncio event loop."""
         self._loop = loop
 
-
     @property
     def is_connected(self) -> bool:
         """Check is client is connected."""

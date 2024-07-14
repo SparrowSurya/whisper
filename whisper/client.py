@@ -57,6 +57,8 @@ class Client(EventThread, BaseClient):
                     self.recv(**response)
         except asyncio.CancelledError:
             pass
+        except ConnectionAbortedError:
+            pass
         except Exception:
             logger.exception("Caught error while listening data")
         finally:

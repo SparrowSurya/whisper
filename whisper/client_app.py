@@ -55,7 +55,7 @@ class ClientApp(Client, Window):
     def prepare_exit(self):
         """Close application gracefully."""
         if not self.__exiting:
-            logger.info("Exiting ...")
+            logger.info("preparing for exit")
             self.send("exit", on_done=lambda _: self.stop())
             self.__exiting = True
 

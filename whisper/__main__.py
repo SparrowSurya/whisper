@@ -25,4 +25,4 @@ if obj.command == "server":
         host=obj.host,
         port=obj.port,
     )
-    server.start()
+    server.run()

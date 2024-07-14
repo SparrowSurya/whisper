@@ -104,10 +104,10 @@ class Server(EventThread, BaseServer):
         """Process the request received from connection."""
         kind = kwargs.pop("kind")
         if func := self.requests.get(kind, None):
+            logger.debug(
+                f"Received '{kind}' request from {conn.address} kwargs: {kwargs}"
+            )
             if response := func(conn, **kwargs):
-                logger.debug(
-                    f"Received '{kind}' request from {conn.address} kwargs: {kwargs}"
-                )
                 await self.send(**response)
         else:
             logger.warning(f"Unknown 'kind': {kind}")
@@ -115,7 +115,7 @@ class Server(EventThread, BaseServer):
     async def send(self, **response):
         """Send the data to allowaed connections."""
         logger.debug(
-            f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve]}"
+            f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve] or None}"
         )
         encoder = StreamEncoder(**response)
         data = encoder.encode(self.encoding)
@@ -143,6 +143,7 @@ class Server(EventThread, BaseServer):
     def exit_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
         """Response for `exit` request."""
         conn.close = True
+        conn.serve = False
         if not conn.serve:
             return
 

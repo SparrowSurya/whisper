@@ -1,5 +1,6 @@
 import tkinter as tk
 
+from ..theme import ThemeMixin
 
-class Button(tk.Button):
+class Button(tk.Button, ThemeMixin):
     """Custom button widget."""

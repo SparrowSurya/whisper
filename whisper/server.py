@@ -144,10 +144,10 @@ class Server(EventThread, BaseServer):
     def exit_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
         """Response for `exit` request."""
         conn.close = True
-        conn.serve = False
         if not conn.serve:
             return
 
+        conn.serve = False
         return {
             "kind": "message",
             "user": None,

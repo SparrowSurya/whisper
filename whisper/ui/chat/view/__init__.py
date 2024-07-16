@@ -1,5 +1,4 @@
 import tkinter as tk
-from typing import Any, Dict
 
 from whisper.ui.widgets import ScrollableFrame
 from .message import Message
@@ -9,9 +8,14 @@ from .info import Info
 class View(ScrollableFrame):
     """It displays various kinds of messages in chat."""
 
+    __theme_attrs__ = {
+        "background": "surfaceContainerLowest"
+    }
+
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, cnf=self._cnf, **kwargs)
-        self._frame.config(cnf=self._cnf)
+        super().__init__(master, *args, **kwargs)
+        self.app = self.master.app
+        self._frame.config(bg=self._frame.cget("bg"))
         self._canvas.config(bg=self._frame.cget("bg"))
         self._listen_scroll(self._frame)
 
@@ -25,6 +29,7 @@ class View(ScrollableFrame):
 
     def _pack(self, widget: tk.Widget):
         """Pack a widget inside."""
+        widget.apply_theme(self.app.theme)
         widget.pack(fill="x", expand=1, pady=2)
         self._listen_scroll(widget)
         self.scroll_to_bottom()
@@ -36,11 +41,3 @@ class View(ScrollableFrame):
             w = childs.pop(0)
             w.bindtags(("scroll",) + w.bindtags())
             childs.extend(w.winfo_children())
-
-    @property
-    def _cnf(self) -> Dict[str, Any]:
-        return {
-            "bg": "#252331",
-            "padx": 2,
-            "pady": 2,
-        }

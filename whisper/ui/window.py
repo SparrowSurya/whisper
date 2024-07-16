@@ -2,12 +2,17 @@ import tkinter as tk
 from typing import Callable
 
 from .root import Root
+from .theme import ThemeMixin
 
 
-class Window(tk.Tk):
+class Window(tk.Tk, ThemeMixin):
     """Tkinter based GUI for the application."""
 
     DESTORY_EVENT = "<<Exit>>"
+
+    __theme_attrs__ = {
+        "background": "surfaceContainerLowest",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

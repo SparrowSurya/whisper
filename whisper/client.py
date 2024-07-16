@@ -6,25 +6,35 @@ from .core.client import BaseClient
 from .core.streamcodec import StreamEncoder, StreamDecoder
 from .core.event_thread import EventThread
 from .core.logger import logger
+from .settings import CHUNK_SIZE, ENCODING
 
 
 class Client(EventThread, BaseClient):
     """The class provides the client backend functions."""
 
-    def __init__(self, host: str, port: int, username: str, **kwargs):
+    def __init__(self,
+        host: str,
+        port: int,
+        username: str,
+        chunk_size: str = CHUNK_SIZE,
+        encoding: str = ENCODING,
+        **kwargs,
+    ):
         """
         Arguments:
         * host - server host address.
         * port - server port address.
         * username - client username.
+        * chunk_size - amount to data read at once,
+        * encoding - encoding for object serialization.
         """
         BaseClient.__init__(self, None)
         EventThread.__init__(self)
         self.host = host
         self.port = port
         self.username = username
-        self.encoding = "utf-8"
-        self.chunk_size = 1024
+        self.encoding =encoding
+        self.chunk_size = chunk_size
         self.response = {
             "message": self.show_message,
             "set-name": self.update_username,

@@ -5,6 +5,7 @@ from typing import Dict, List
 from .core import EventThread, StreamEncoder, StreamDecoder
 from .core.server import BaseServer, ConnectionHandle, ServerConnection
 from .core.logger import logger
+from .settings import CHUNK_SIZE, ENCODING
 
 
 # TODO - seperate thread to listen for keyboard interrupt when closing server.
@@ -19,8 +20,8 @@ class Server(EventThread, BaseServer):
         self,
         host: str,
         port: int,
-        encoding: str = "utf-8",
-        chunk_size: int = 1024,
+        encoding: str = ENCODING,
+        chunk_size: int = CHUNK_SIZE,
         connection: ServerConnection | None = None,
     ):
         """

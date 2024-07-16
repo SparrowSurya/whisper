@@ -1,5 +1,3 @@
-from typing import Dict, Any
-
 from whisper.core.chat import BaseChat
 from whisper.ui.widgets import Frame
 from .topbar import TopBar
@@ -16,13 +14,17 @@ class Chat(Frame, BaseChat):
     * input - for user input.
     """
 
+    __theme_attrs__ = {
+        "background": "surfaceContainerLowest",
+    }
+
     def __init__(self, master, *args, **kwargs):
         Frame.__init__(self, master, *args, **kwargs)
         BaseChat.__init__(self, self.master.app)
 
-        self.topbar = TopBar(self)
+        self.topbar = TopBar(self, pady=4, padx=4)
         self.view = View(self)
-        self.input = InputPanel(self)
+        self.input = InputPanel(self, padx=4, pady=4)
 
         self.topbar.grid(row=0, column=0, sticky="nsew")
         self.view.grid(row=1, column=0, sticky="nsew")
@@ -51,9 +53,3 @@ class Chat(Frame, BaseChat):
     def update_username(self, name: str, **kwargs):
         """Change the displayed username."""
         self.topbar.set_title(name)
-
-    @property
-    def _cnf(self) -> Dict[str, Any]:
-        return {
-            "bg": "#343145",
-        }

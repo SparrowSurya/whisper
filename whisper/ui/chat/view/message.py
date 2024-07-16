@@ -1,28 +1,27 @@
-from typing import Any, Dict
 from whisper.ui.widgets import Frame, Label
 
 
 class Message(Frame):
     """Text message from a user in chat."""
 
+    __theme_attrs__ = {
+        "background": "surfaceContainerLowest"
+    }
+
     def __init__(self, master, *args, username: str, message: str, **kwargs):
-        super().__init__(master, *args, cnf=self._cnf, **kwargs)
+        super().__init__(master, *args, **kwargs)
 
         self.head = Label(
             self,
             text=username,
-            bg="#343145",
-            fg="#ff66b7",
             height=1,
             justify="left",
             anchor="nw",
-            font=("Roboto", 14, "bold", "underline"),  # type: ignore
+            font=("Roboto", 14, "bold", "underline"),
         )
         self.body = Label(
             self,
             text=message,
-            bg="#343145",
-            fg="#d7d7da",
             justify="left",
             anchor="nw",
             font=("Roboto", 14, "normal"),
@@ -37,8 +36,12 @@ class Message(Frame):
             "+",
         )
 
-    @property
-    def _cnf(self) -> Dict[str, Any]:
-        return {
-            "bg": "#343145",
+        self.head.__theme_attrs__ = {
+            "background": "surfaceContainerLowest",
+            "foreground": "primaryContainer",
+        }
+
+        self.body.__theme_attrs__ = {
+            "background": "surfaceContainerLowest",
+            "foreground": "onSurface",
         }

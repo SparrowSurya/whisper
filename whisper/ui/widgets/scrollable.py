@@ -11,6 +11,7 @@ class ScrollableFrame(Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self._setup_scroll(*args, **kwargs)
+        self._setup_theme()
 
     def _setup_scroll(self, *args, **kwargs):
         """Setup scroll on the container."""
@@ -61,3 +62,8 @@ class ScrollableFrame(Frame):
     def scroll_to_bottom(self):
         """scrolls to the bottom."""
         self._canvas.yview_moveto(1.0)
+
+    def _setup_theme(self):
+        """Setups theme attrs for the child."""
+        self._canvas.__theme_attrs__ = self.__theme_attrs__
+        self._frame.__theme_attrs__ = self.__theme_attrs__

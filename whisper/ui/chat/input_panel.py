@@ -1,5 +1,4 @@
 import tkinter as tk
-from typing import Any, Dict
 
 from whisper.ui.widgets import Frame, Text, Button
 from whisper.ui.utils import dynamic_text_height
@@ -14,19 +13,16 @@ class InputPanel(Frame):
     * sendbtn - sends the message.
     """
 
+    __theme_attrs__ = {
+        "background": "surfaceContainer",
+    }
+
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, cnf=self._cnf, **kwargs)
+        super().__init__(master, *args, **kwargs)
 
         self.textinput = Text(
             self,
-            fg="#b8b8b8",
-            bg="#252331",
-            selectforeground="#252331",
-            selectbackground="#b8b8b8",
-            highlightbackground="#b8b8b8",
-            highlightcolor="#184ef6",
             highlightthickness=1,
-            insertbackground="#b8b8b8",
             insertwidth=2,
             insertborderwidth=0,
             wrap="word",
@@ -39,8 +35,6 @@ class InputPanel(Frame):
             image=self.send_icon,
             compound="center",
             relief="flat",
-            bg="#252331",
-            activebackground="#252331",
             bd=0,
         )
 
@@ -56,6 +50,22 @@ class InputPanel(Frame):
             "+",
         )
 
+        self.textinput.__theme_attrs__ = {
+            "background": "surfaceContainerLow",
+            "foreground": "onSecondaryContainer",
+            "insertbackground": "onSecondaryContainer",
+            "selectbackground": "onSecondaryContainer",
+            "selectforeground": "surfaceContainerLow",
+            "highlightbackground": "primaryContainer",
+            "highlightcolor": "primaryContainer",
+        }
+
+        self.sendbtn.__theme_attrs__ = {
+            "activebackground": "surfaceContainer",
+            "activeforeground": "surfaceContainer",
+            "background": "surfaceContainer",
+        }
+
     def get_text(self) -> str:
         """Text entered."""
         return self.textinput.get("1.0", "end-1c")
@@ -64,9 +74,3 @@ class InputPanel(Frame):
         """Cleans the text content."""
         self.textinput.delete("1.0", "end")
         self.textinput.configure(height=1)
-
-    @property
-    def _cnf(self) -> Dict[str, Any]:
-        return {
-            "bg": "#252331",
-        }

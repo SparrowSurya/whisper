@@ -4,6 +4,7 @@ from typing import Self
 from .client import Client
 from .ui.window import Window
 from .core.logger import logger
+from .settings import DEFAULT_THEME
 
 
 class ClientApp(Client, Window):
@@ -22,6 +23,7 @@ class ClientApp(Client, Window):
         """
         Client.__init__(self, host, port, username, **kwargs)
         Window.__init__(self)
+        self.theme = DEFAULT_THEME
         self.__exiting = False
         self.setup()
 
@@ -64,6 +66,7 @@ class ClientApp(Client, Window):
         self.set_title("Whisper")
         self.set_geometry(400, 500, 30, 30)
         self.root.chat.topbar.set_title(self.username)
+        self.apply_theme(self.theme)
 
     def show_message(self, **kwargs):
         """Shows the message in chat.

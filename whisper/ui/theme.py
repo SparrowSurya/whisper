@@ -1,32 +1,92 @@
-from dataclasses import dataclass, field
-from typing import Mapping
+from dataclasses import dataclass
+import json
+from typing import Mapping, Self
 
 
-@dataclass(repr=False)
+@dataclass(repr=False, frozen=True)
 class Theme:
     """
     Theme definition for ui. Supports semantic color system.
-    
     """
 
     name: str
     """Name of the theme."""
 
     primary: str
+    surfaceTint: str
+    onPrimary: str
+    primaryContainer: str
+    onPrimaryContainer: str
+
     secondary: str
+    onSecondary: str
+    secondaryContainer: str
+    onSecondaryContainer: str
+
     tertiary: str
+    onTertiary: str
+    tertiaryContainer: str
+    onTertiaryContainer: str
 
-    accent: str
+    error: str
+    onError: str
+    errorContainer: str
+    onErrorContainer: str
 
-    heading: str
-    title: str
-    text: str
+    background: str
+    onBackground: str
+
+    surface: str
+    onSurface: str
+    surfaceVariant: str
+    onSurfaceVariant: str
+
+    outline: str
+    outlineVariant: str
+
+    shadow: str
+    scrim: str
+
+    inverseSurface: str
+    inverseOnSurface: str
+    inversePrimary: str
+
+    primaryFixed: str
+    onPrimaryFixed: str
+    primaryFixedDim: str
+    onPrimaryFixedVariant: str
+    secondaryFixed: str
+    onSecondaryFixed: str
+    secondaryFixedDim: str
+    onSecondaryFixedVariant: str
+
+    tertiaryFixed: str
+    onTertiaryFixed: str
+    tertiaryFixedDim: str
+    onTertiaryFixedVariant: str
+
+    surfaceDim: str
+    surfaceBright: str
+    surfaceContainerLowest: str
+    surfaceContainerLow: str
+    surfaceContainer: str
+    surfaceContainerHigh: str
+    surfaceContainerHighest: str
+
+    variant: str = ""
+    """Theme variant name."""
 
     def __str__(self) -> str:
         self.name
 
     __repr__ = __str__
 
+    @classmethod
+    def from_json(cls, filepath: str) -> Self:
+        """"Load theme from json file."""
+        with open(filepath, "r") as f:
+            content = json.load(f)
+        return cls(**content)
 
 
 class ThemeMixin:

@@ -1,9 +1,9 @@
 import asyncio
 import threading
-from typing import Dict, List
+from typing import List, Iterable
 
 from .core import EventThread, StreamEncoder, StreamDecoder
-from .core.server import BaseServer, ConnectionHandle, ServerConnection
+from .core.server import BaseServer, ConnectionHandle, ServerConnection, Response
 from .core.logger import logger
 from .settings import CHUNK_SIZE, ENCODING
 
@@ -108,64 +108,84 @@ class Server(EventThread, BaseServer):
             logger.debug(
                 f"Received '{kind}' request from {conn.address} kwargs: {kwargs}"
             )
-            if response := func(conn, **kwargs):
-                await self.send(**response)
+            if responses := func(conn, **kwargs):
+                if isinstance(responses, Response):
+                    await self.send(responses)
+                else:
+                    await self.send(*responses)
         else:
             logger.warning(f"Unknown 'kind': {kind}")
 
-    async def send(self, **response):
-        """Send the data to allowaed connections."""
-        logger.debug(
-            f"Sending: {response} to {[conn.name for conn in self.clients if conn.serve] or None}"
-        )
-        encoder = StreamEncoder(**response)
-        data = encoder.encode(self.encoding)
-        for conn in self.clients:
-            if conn.serve:
-                await super().write(conn, data)
+    async def send(self, *responses: Response):
+        """Send the response to target connections."""
+        for response in responses:
+            logger.debug(f"Sending: {response}")
+            encoder = StreamEncoder(**response.content)
+            data = encoder.encode(self.encoding)
+            for conn in response.receivers:
+                if conn.serve:
+                    await super().write(conn, data)
 
-    def hello_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
+    def hello_request(self, conn: ConnectionHandle, **kwargs) -> Iterable[Response] | Response | None:
         """Response for `hello` request."""
         response = self.set_name_request(conn, **kwargs)
-        conn.serve = True
-        return response
+        if response:
+            conn.serve = True
+            return response
+        return None
 
-    def set_name_request(self, conn: ConnectionHandle, name: str, **kwargs) -> Dict:
+    def set_name_request(self, conn: ConnectionHandle, name: str, **kwargs) -> Iterable[Response]:
         """Response for 'set-name' request."""
         old_name = conn.username
         conn.data["username"] = name
 
-        return {
+        content1 = {
             "kind": "message",
             "text": f"{old_name} renamed to {name}!" if old_name else f"{name} joined!",
             "user": None,
         }
+        receivers1 = tuple(client for client in self.clients)
 
-    def exit_request(self, conn: ConnectionHandle, **kwargs) -> Dict | None:
+        content2 = {
+            "kind": "set-name",
+            "name": conn.data["username"],
+        }
+        receivers2 = (conn,)
+
+        return (
+            Response(content2, receivers2),
+            Response(content1, receivers1),
+        )
+
+    def exit_request(self, conn: ConnectionHandle, **kwargs) -> Iterable[Response] | Response | None:
         """Response for `exit` request."""
         conn.close = True
         if not conn.serve:
-            return
+            return None
 
         conn.serve = False
-        return {
+        content = {
             "kind": "message",
             "user": None,
             "text": f"{conn.username} exited!",
         }
+        receivers = tuple(client for client in self.clients if client != conn)
+        return Response(content, receivers)
 
     def message_request(
         self, conn: ConnectionHandle, text: str, **kwargs
-    ) -> Dict | None:
+    ) -> Response | None:
         """Response for `message` request."""
         if not conn.serve:
-            return None
+            return
 
-        return {
+        content = {
             "kind": "message",
             "user": conn.username,
             "text": text,
         }
+        receivers = tuple(client for client in self.clients)
+        return Response(content, receivers)
 
     def run(self):
         """Run the server."""
@@ -196,3 +216,12 @@ class Server(EventThread, BaseServer):
     async def exit_main(self):
         self.stop_server()
         await super().exit_main()
+
+
+"""
+class Response:
+    obj: dict
+    to: [ConnectionHandle]
+
+CreateResponse -> [Responses]
+"""

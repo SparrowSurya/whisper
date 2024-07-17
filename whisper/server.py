@@ -5,7 +5,7 @@ from typing import List, Iterable
 from .core import EventThread, StreamEncoder, StreamDecoder
 from .core.server import BaseServer, ConnectionHandle, ServerConnection, Response
 from .core.logger import logger
-from .settings import CHUNK_SIZE, ENCODING
+from .settings import CHUNK_SIZE, ENCODING, TIMEOUT
 
 
 # TODO - seperate thread to listen for keyboard interrupt when closing server.
@@ -22,6 +22,7 @@ class Server(EventThread, BaseServer):
         port: int,
         encoding: str = ENCODING,
         chunk_size: int = CHUNK_SIZE,
+        timeout: int = TIMEOUT,
         connection: ServerConnection | None = None,
     ):
         """
@@ -32,6 +33,7 @@ class Server(EventThread, BaseServer):
         * port - port address.
         * encoding - encoding used by the server.
         * chunk_size - amount of data to read from connection at a time.
+        * timeout - time period to send valid hello request.
         * connection - server connection manager object.
         """
         BaseServer.__init__(self, connection)
@@ -40,6 +42,7 @@ class Server(EventThread, BaseServer):
         self.port = port
         self.encoding = encoding
         self.chunk_size = chunk_size
+        self.timeout = timeout
 
         self.clients: List[ConnectionHandle] = []
         self.requests = {
@@ -63,7 +66,7 @@ class Server(EventThread, BaseServer):
             except Exception:
                 logger.exception("Exception while listening connections")
             else:
-                self.schedule(self.handle(conn))
+                conn.data["future"] = self.schedule(self.handle(conn))
         logger.info("Stopped listening for new connections.")
 
     def register(self, conn: ConnectionHandle):
@@ -80,6 +83,7 @@ class Server(EventThread, BaseServer):
         processing the request."""
         logger.info(f"Started serving: {conn.address}")
         decoder = StreamDecoder()
+        self.set_timeout(conn)
         try:
             while not conn.close:
                 data = await self.read(conn, self.chunk_size)
@@ -130,6 +134,8 @@ class Server(EventThread, BaseServer):
         """Response for `hello` request."""
         response = self.set_name_request(conn, **kwargs)
         if response:
+            conn.data.pop("timeout").cancel()
+            logger.debug(f"Timeout removed for {conn.address}")
             conn.serve = True
             return response
         return None
@@ -187,6 +193,22 @@ class Server(EventThread, BaseServer):
         receivers = tuple(client for client in self.clients)
         return Response(content, receivers)
 
+    def set_timeout(self, conn: ConnectionHandle):
+        """Set timeout on user withhin the period it must send valid hello request."""
+        coro = self.timeout_handler(conn)
+        fut = self.schedule(coro)
+        conn.data["timeout"] = fut
+        logger.debug(f"Timeout {self.timeout}s set on {conn.address}")
+
+    async def timeout_handler(self, conn: ConnectionHandle):
+        """COroutine that manages timeout on a connection."""
+        await asyncio.sleep(self.timeout)
+        if conn.data.get("timeout", None):
+            conn.close = True
+            conn.serve = False
+            logger.debug(f"Timeout expired for {conn.address}")
+            conn.data.pop("future").cancel()
+
     def run(self):
         """Run the server."""
         thread = threading.Thread(target=self.start, name="Async-Thread")
@@ -216,12 +238,3 @@ class Server(EventThread, BaseServer):
     async def exit_main(self):
         self.stop_server()
         await super().exit_main()
-
-
-"""
-class Response:
-    obj: dict
-    to: [ConnectionHandle]
-
-CreateResponse -> [Responses]
-"""

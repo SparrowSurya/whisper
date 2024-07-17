@@ -58,7 +58,6 @@ class Client(EventThread, BaseClient):
         decoder = StreamDecoder()
         try:
             while self.is_connected:
-                # TODO - ConnectionAbortedError when client disconnects
                 data = await self.read(self.chunk_size)
                 if data == b"":
                     logger.info("Received b''")

@@ -80,3 +80,8 @@ class ClientApp(Client, Window):
         """Update the username."""
         Client.update_username(self, name, **kwargs)
         self.root.chat.update_username(name)
+
+    def server_exit(self, **kwargs):
+        """Server is closing."""
+        logger.info("Server is closing")
+        self.prepare_exit()

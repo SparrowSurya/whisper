@@ -1,6 +1,6 @@
 import socket
 from dataclasses import dataclass, field
-from typing import Dict, Tuple, Any
+from typing import Dict, Iterable, Tuple, Any
 
 
 @dataclass(repr=False, slots=True)
@@ -43,3 +43,19 @@ class ConnectionHandle:
         if self.username:
             return f"<{type(self).__name__}: {self.address} as {self.username}>"
         return f"<{type(self).__name__}: {self.address}>"
+
+
+@dataclass(frozen=True, repr=False)
+class Response:
+    """A response data sent to recipients."""
+
+    content: Dict[str, Any]
+    """Resposns object."""
+
+    receivers: Iterable[ConnectionHandle]
+    """Response receivers."""
+
+    def __repr__(self) -> str:
+        return f"<Response: {self.content} to {self.receivers}>"
+
+    __str__ = __repr__

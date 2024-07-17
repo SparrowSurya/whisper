@@ -228,6 +228,12 @@ class Server(EventThread, BaseServer):
             thread.join()
             logger.info(f"{thread.name} joined!")
 
+    async def inform_exit(self):
+        """Informs the connections about the shutdown."""
+        await self.send(
+            Response({"kind": "exit"}, self.clients)
+        )
+
     async def init_main(self):
         self.start_server(self.host, self.port)
         await super().init_main()
@@ -236,5 +242,8 @@ class Server(EventThread, BaseServer):
         self.schedule(self.listen())
 
     async def exit_main(self):
+        await self.inform_exit()
+        for conn in self.clients:
+            conn.data["future"].cancel()
         self.stop_server()
         await super().exit_main()

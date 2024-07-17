@@ -38,6 +38,7 @@ class Client(EventThread, BaseClient):
         self.response = {
             "message": self.show_message,
             "set-name": self.update_username,
+            "exit": self.server_exit,
         }
 
     def send(self,
@@ -105,3 +106,7 @@ class Client(EventThread, BaseClient):
 
     def show_message(self, user: str | None, text: str):
         """Show the message on chat."""
+
+    def server_exit(self, **kwargs):
+        """Server is closing."""
+        self.stop()

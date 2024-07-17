@@ -29,13 +29,18 @@ class InputPanel(Frame):
             height=1,
             font=("Roboto", 16, "normal"),
         )
-        self.send_icon = tk.PhotoImage(file="./whisper/assets/send.png")
+
+        self.blank_img = tk.PhotoImage()
         self.sendbtn = Button(
             self,
-            image=self.send_icon,
+            image=self.blank_img,
             compound="center",
             relief="flat",
+            text="",
             bd=0,
+            font=("Roboto", 32, "bold"),
+            height=26,
+            width=26,
         )
 
         self.textinput.grid(row=0, column=0, sticky="nsew")
@@ -62,8 +67,9 @@ class InputPanel(Frame):
 
         self.sendbtn.__theme_attrs__ = {
             "activebackground": "surfaceContainer",
-            "activeforeground": "surfaceContainer",
+            "activeforeground": "primary",
             "background": "surfaceContainer",
+            "foreground": "primaryContainer",
         }
 
     def get_text(self) -> str:

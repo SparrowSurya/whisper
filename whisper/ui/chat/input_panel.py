@@ -37,7 +37,9 @@ class InputPanel(Frame):
             compound="center",
             relief="flat",
             text="",
-            bd=0,
+            border=0,
+            borderwidth=0,
+            highlightthickness=0,
             font=("Roboto", 32, "bold"),
             height=26,
             width=26,
@@ -54,6 +56,7 @@ class InputPanel(Frame):
             lambda _: dynamic_text_height(self.textinput, 5),
             "+",
         )
+        self.sendbtn.bind("<FocusIn>", lambda _:self.textinput.focus_set(), "+")
 
         self.textinput.__theme_attrs__ = {
             "background": "surfaceContainerLow",
@@ -70,6 +73,8 @@ class InputPanel(Frame):
             "activeforeground": "primary",
             "background": "surfaceContainer",
             "foreground": "primaryContainer",
+            "highlightcolor": "surfaceContainer",
+            "highlightbackground": "surfaceContainer",
         }
 
     def get_text(self) -> str:

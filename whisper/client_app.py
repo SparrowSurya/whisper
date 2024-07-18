@@ -68,6 +68,9 @@ class ClientApp(Client, Window):
         self.root.chat.topbar.set_username(self.username)
         self.apply_theme(self.theme)
 
+        # to remove focus on username when somewhere else is clicked
+        self.bind_all("<Button-1>", lambda event: event.widget.focus_set(), "+")
+
     def show_message(self, **kwargs):
         """Shows the message in chat.
 

@@ -16,7 +16,7 @@ class Info(Frame):
             text=info,
             justify="center",
             anchor="center",
-            font=("Roboto", 14, "normal"),
+            font=("Roboto", 12, "normal"),
         )
         self.body.pack(fill="x", anchor="center")
         self.body.bind(

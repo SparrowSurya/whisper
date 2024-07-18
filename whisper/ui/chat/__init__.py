@@ -52,4 +52,4 @@ class Chat(Frame, BaseChat):
 
     def update_username(self, name: str, **kwargs):
         """Change the displayed username."""
-        self.topbar.set_title(name)
+        self.topbar.set_username(name)

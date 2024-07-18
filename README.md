@@ -15,6 +15,10 @@ than standard libraries.
 ## Features
 1. Allows only text messages (unicode supported)
 2. Responsive UI
+3. User can chage their username
+    * double click it to change the username
+    * escape/focusout to cancel
+    * enter to change name
 
 
 ## Usage

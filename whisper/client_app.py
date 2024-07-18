@@ -65,7 +65,7 @@ class ClientApp(Client, Window):
         """Apply the configured settings application."""
         self.set_title("Whisper")
         self.set_geometry(400, 500, 30, 30)
-        self.root.chat.topbar.set_title(self.username)
+        self.root.chat.topbar.set_username(self.username)
         self.apply_theme(self.theme)
 
     def show_message(self, **kwargs):

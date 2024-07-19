@@ -88,3 +88,10 @@ class ClientApp(Client, Window):
         """Server is closing."""
         logger.info("Server is closing")
         self.prepare_exit()
+
+    async def init_main(self):
+        await super().init_main()
+
+        # show the server address on topbar
+        ip, port = self.servername()
+        self.root.chat.topbar.set_servername(f"{ip}:{port}")

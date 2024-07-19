@@ -1,4 +1,5 @@
 import asyncio
+from typing import Tuple
 
 from .connection import ClientConnection
 from ..logger import logger
@@ -40,6 +41,10 @@ class BaseClient:
     def is_connected(self) -> bool:
         """Check is client is connected."""
         return self.connection.is_connected
+
+    def servername(self) -> Tuple[str, int]:
+        """Provides the server name."""
+        return self.connection.sock.getpeername()
 
     def connect(self,
         host: str,

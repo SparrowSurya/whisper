@@ -13,3 +13,9 @@ TIMEOUT = 10 # seconds
 
 # client ui
 DEFAULT_THEME = Theme.from_json("./whisper/data/default-theme.json")
+DEFAULT_ICON_PATH = "./whisper/assets/default_icon.png"
+
+# window titlebar height (win32 platform)
+MIN_WINDOW_WIDTH = 256
+MIN_WINDOW_HEIGHT = 42
+TITLEBAR_HEIGHT = 40

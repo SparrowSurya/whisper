@@ -13,16 +13,17 @@ class ClientApp(Client, Window):
     The app contains refrence to itself `app` and should be passed to
     components down the root component.
     """
-
-    def __init__(self, host: str, port: int, username: str, **kwargs):
+    def __init__(self, title: str, host: str, port: int, username: str, customize: bool = True):
         """
         Arguments:
+        * title - title on the window.
         * host - server hostname.
         * port - server port address.
         * username - client username.
+        * customize - use custom window.
         """
-        Client.__init__(self, host, port, username, **kwargs)
-        Window.__init__(self)
+        Client.__init__(self, host, port, username)
+        Window.__init__(self, title, customize=customize)
         self.theme = DEFAULT_THEME
         self.__exiting = False
         self.setup()
@@ -49,7 +50,6 @@ class ClientApp(Client, Window):
 
     def setup(self):
         """Initiate all setup and configurations."""
-        self.setup_root()
         self.apply_config()
         self.on_close(self.prepare_exit)
         self.on_finish(lambda _: self.event_generate(self.DESTORY_EVENT))
@@ -63,8 +63,7 @@ class ClientApp(Client, Window):
 
     def apply_config(self):
         """Apply the configured settings application."""
-        self.set_title("Whisper")
-        self.set_geometry(400, 500, 30, 30)
+        self.geometry(400, 500, 30, 30, center=True)
         self.root.chat.topbar.set_username(self.username)
         self.apply_theme(self.theme)
 

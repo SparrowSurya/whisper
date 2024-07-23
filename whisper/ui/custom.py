@@ -1,6 +1,6 @@
 import sys
 import tkinter as tk
-from typing import Tuple
+from typing import Callable, Tuple
 
 from whisper.settings import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
 from .widgets import Frame
@@ -32,7 +32,7 @@ class CustomWindowMixin:
     def __init__(self, title: str, customize: bool = True):
         """Creates customized window with given title."""
 
-        self.root = Frame(self)
+        self.root = self.create_root(self)
         """All child widgets must contains inside this."""
 
         if customize and sys.platform == "win32":
@@ -287,6 +287,20 @@ class CustomWindowMixin:
                 raise ValueError(f"Inappropriate minimum width and height, got {min_w, min_h}")
             self.__minsize = min_w, min_h
 
+        def on_close(self, callback: Callable[[], None]):
+            """Callback when user clicks close button. Must destory window manually."""
+            self.titlebar.close.config(command=callback)
+
+    else:
+
+        def on_close(self, callback: Callable[[], None]):
+            """Callback when user clicks close button. Must destory window manually."""
+            self.wm_protocol("WM_DELETE_WINDOW", callback)
+
+
+    def create_root(self, parent: tk.Misc) -> tk.Widget:
+        """Create root widget for the application."""
+        return Frame(parent)
 
     def geometry(self, width: int, height: int, x: int | None = None, y: int | None = None, *, center: bool = False):
         """Configure dimensions and position of window.

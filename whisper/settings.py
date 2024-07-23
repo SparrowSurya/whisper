@@ -19,3 +19,5 @@ DEFAULT_ICON_PATH = "./whisper/assets/default_icon.png"
 MIN_WINDOW_WIDTH = 256
 MIN_WINDOW_HEIGHT = 42
 TITLEBAR_HEIGHT = 40
+
+TITLE = "Whisper"

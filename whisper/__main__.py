@@ -1,5 +1,6 @@
 import sys
 
+from whisper.settings import TITLE
 from whisper.parser import parser, log_levels
 from whisper.core.logger import stream_handler
 
@@ -12,6 +13,7 @@ if obj.command == "client":
     from .client_app import ClientApp
 
     client = ClientApp(
+        TITLE,
         host=obj.host,
         port=obj.port,
         username=obj.user,

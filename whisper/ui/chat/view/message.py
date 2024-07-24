@@ -5,7 +5,7 @@ class Message(Frame):
     """Text message from a user in chat."""
 
     __theme_attrs__ = {
-        "background": "surfaceContainerLowest"
+        "background": "surfaceContainerHigh"
     }
 
     def __init__(self, master, *args, username: str, message: str, **kwargs):
@@ -37,11 +37,11 @@ class Message(Frame):
         )
 
         self.head.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-            "foreground": "primaryContainer",
+            "background": "surfaceContainerHigh",
+            "foreground": "primary",
         }
 
         self.body.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
+            "background": "surfaceContainerHigh",
             "foreground": "onSurface",
         }

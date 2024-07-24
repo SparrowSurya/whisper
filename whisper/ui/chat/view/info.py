@@ -5,7 +5,7 @@ class Info(Frame):
     """Display the information in chat."""
 
     __theme_attrs__ = {
-        "background": "surfaceContainerLowest"
+        "background": "surfaceContainerHigh"
     }
 
     def __init__(self, master, *args, info: str, **kwargs):
@@ -16,7 +16,7 @@ class Info(Frame):
             text=info,
             justify="center",
             anchor="center",
-            font=("Roboto", 12, "normal"),
+            font=("Roboto", 14, "normal"),
         )
         self.body.pack(fill="x", anchor="center")
         self.body.bind(
@@ -26,6 +26,6 @@ class Info(Frame):
         )
 
         self.body.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
+            "background": "surfaceContainerHigh",
             "foreground": "onSurfaceVariant",
         }

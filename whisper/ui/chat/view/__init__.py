@@ -9,7 +9,7 @@ class View(ScrollableFrame):
     """It displays various kinds of messages in chat."""
 
     __theme_attrs__ = {
-        "background": "surfaceContainerLowest"
+        "background": "surfaceContainerHigh",
     }
 
     def __init__(self, master, *args, **kwargs):
@@ -30,7 +30,7 @@ class View(ScrollableFrame):
     def _pack(self, widget: tk.Widget):
         """Pack a widget inside."""
         widget.apply_theme(self.app.theme)
-        widget.pack(fill="x", expand=1, pady=2)
+        widget.pack(fill="x", expand=1, pady=2, padx=2)
         self._listen_scroll(widget)
         self.scroll_to_bottom()
 

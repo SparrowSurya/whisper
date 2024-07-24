@@ -7,7 +7,7 @@ class TopBar(Frame):
     """
 
     __theme_attrs__ = {
-        "background": "primaryContainer",
+        "background": "surfaceContainerLow",
     }
 
     def __init__(self, master, *args, **kwargs):
@@ -20,25 +20,28 @@ class TopBar(Frame):
             font=("Roboto", 14, "bold"),
             state="disabled",
             relief="flat",
+            insertwidth=1,
+            insertborderwidth=0,
         )
         self.servername = Label(
             self,
             justify="left",
-            font=("Roboto", 14, "bold"),
+            font=("Roboto", 14, "normal"),
         )
 
         self.username.pack(side="left", fill="x")
         self.servername.pack(side="right")
 
         self.username.__theme_attrs__ = {
-            "disabledbackground": "primaryContainer",
-            "disabledforeground": "primary",
-            "background": "primaryContainer",
-            "foreground": "primary",
+            "disabledbackground": "surfaceContainer",
+            "disabledforeground": "onSurface",
+            "background": "surfaceContainer",
+            "foreground": "onSurface",
+            "insertbackground": "onSurfaceVariant",
         }
         self.servername.__theme_attrs__ = {
-            "background": "primaryContainer",
-            "foreground": "primary",
+            "background": "surfaceContainer",
+            "foreground": "onSurface",
         }
 
         self.username.bind("<Double-Button-1>", self.enable_edit_username)

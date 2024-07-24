@@ -14,7 +14,7 @@ class InputPanel(Frame):
     """
 
     __theme_attrs__ = {
-        "background": "surfaceContainer",
+        "background": "surfaceContainerLow",
     }
 
     def __init__(self, master, *args, **kwargs):
@@ -22,12 +22,14 @@ class InputPanel(Frame):
 
         self.textinput = Text(
             self,
-            highlightthickness=1,
-            insertwidth=2,
+            highlightthickness=0,
+            insertwidth=1,
             insertborderwidth=0,
             wrap="word",
             height=1,
             font=("Roboto", 16, "normal"),
+            padx=4,
+            pady=4,
         )
 
         self.blank_img = tk.PhotoImage()
@@ -59,22 +61,20 @@ class InputPanel(Frame):
         self.sendbtn.bind("<FocusIn>", lambda _:self.textinput.focus_set(), "+")
 
         self.textinput.__theme_attrs__ = {
-            "background": "surfaceContainerLow",
-            "foreground": "onSecondaryContainer",
-            "insertbackground": "onSecondaryContainer",
-            "selectbackground": "onSecondaryContainer",
-            "selectforeground": "surfaceContainerLow",
-            "highlightbackground": "primaryContainer",
-            "highlightcolor": "primaryContainer",
+            "background": "surface",
+            "foreground": "onSurface",
+            "selectbackground": "onSurface",
+            "selectforeground": "surface",
+            "insertbackground": "onSurfaceVariant",
         }
 
         self.sendbtn.__theme_attrs__ = {
-            "activebackground": "surfaceContainer",
+            "activebackground": "surfaceContainerLow",
             "activeforeground": "primary",
-            "background": "surfaceContainer",
+            "background": "surfaceContainerLow",
             "foreground": "primaryContainer",
-            "highlightcolor": "surfaceContainer",
-            "highlightbackground": "surfaceContainer",
+            "highlightcolor": "surfaceContainerLow",
+            "highlightbackground": "surfaceContainerLow",
         }
 
     def get_text(self) -> str:

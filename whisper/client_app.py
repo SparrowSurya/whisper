@@ -70,6 +70,14 @@ class ClientApp(Client, Window):
         # to remove focus on username when somewhere else is clicked
         self.bind_all("<Button-1>", lambda event: event.widget.focus_set(), "+")
 
+        # remove focus from custom titlebar buttons if exists
+        try:
+            self.titlebar.minimize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
+            self.titlebar.maximize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
+            self.titlebar.close.bind("<FocusIn>", lambda _:self.focus_set(), "+")
+        except AttributeError:
+            pass
+
     def show_message(self, **kwargs):
         """Shows the message in chat.
 

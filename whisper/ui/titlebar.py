@@ -4,8 +4,12 @@ from .widgets import Label, Frame, Button
 from whisper.settings import TITLEBAR_HEIGHT, DEFAULT_ICON_PATH
 
 
-class TitleBar(Frame):
-    """TitleBar for the custom window."""
+class Titlebar(Frame):
+    """
+    TitleBar for the custom window application.
+
+    NOTE - The parent of this widget must be `tkinter.Tk` or `tkinter.Toplevel`.
+    """
 
     __theme_attrs__ = {
         "background": "surfaceContainerLowest",
@@ -29,7 +33,7 @@ class TitleBar(Frame):
             text="",
             image=self.blank_img,
             compound="center",
-            font=("Open Sans", 14, "bold"),
+            font=("Open Sans", 14, "normal"),
             justify="left",
             anchor="w",
             height=TITLEBAR_HEIGHT,
@@ -156,7 +160,7 @@ class TitleBar(Frame):
 
     def get_title(self) -> str:
         """Get title on titlebar."""
-        self.title.cget("text")
+        return self.title.cget("text")
 
     def set_restore_down(self):
         """Sets the restore down glyph instead maximize."""

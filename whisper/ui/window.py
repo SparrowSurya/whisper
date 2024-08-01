@@ -2,10 +2,10 @@ import tkinter as tk
 
 from .root import Root
 from .theme import ThemeMixin
-from .custom import CustomWindowMixin
+from .custom import CustomTkWindow
 
 
-class Window(CustomWindowMixin, tk.Tk, ThemeMixin):
+class Window(CustomTkWindow, ThemeMixin):
     """Tkinter based GUI for the application."""
 
     DESTORY_EVENT = "<<Exit>>"
@@ -14,29 +14,29 @@ class Window(CustomWindowMixin, tk.Tk, ThemeMixin):
         "background": "surfaceContainerLowest",
     }
 
-    def __init__(self, title: str, *args, customize: bool = True, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
-        CustomWindowMixin.__init__(self, title, customize=customize)
+    def __init__(self, title: str, *args, **kwargs):
+        CustomTkWindow.__init__(self)
 
-        self.on_close(self.destroy)
+        self.title(title)
         self.bind(self.DESTORY_EVENT, self.destroy)
 
-        try:
+        if self.is_customized:
+            self.on_close(self.destroy)
             for widget in (
-                self.n, self.s, self.e, self.w,
-                self.ne, self.nw, self.se, self.sw,
+                self.grip_n, self.grip_s, self.grip_e, self.grip_w,
+                self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
             ):
                 widget.__theme_attrs__ = self.titlebar.__theme_attrs__
-        except AttributeError:
-            pass
+        else:
+            self.wm_protocol("WM_DELETE_WINDOW", self.destroy)
 
     def destroy(self, event=None):
         """Destroy the window."""
         super().destroy()
 
-    def create_root(self, parent: tk.Misc) -> tk.Widget:
-        return Root(parent)
+    def mainloop(self):
+        """Window mainloop."""
+        super().mainloop()
 
-    def set_title(self, title: str):
-        """Sets title on the window."""
-        self.wm_title(title)
+    def get_root(self, parent: tk.Misc | None = None) -> tk.Widget:
+        return Root(self)

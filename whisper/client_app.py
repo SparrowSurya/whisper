@@ -13,7 +13,7 @@ class ClientApp(Client, Window):
     The app contains refrence to itself `app` and should be passed to
     components down the root component.
     """
-    def __init__(self, title: str, host: str, port: int, username: str, customize: bool = True):
+    def __init__(self, title: str, host: str, port: int, username: str):
         """
         Arguments:
         * title - title on the window.
@@ -23,7 +23,7 @@ class ClientApp(Client, Window):
         * customize - use custom window.
         """
         Client.__init__(self, host, port, username)
-        Window.__init__(self, title, customize=customize)
+        Window.__init__(self, title)
         self.theme = DEFAULT_THEME
         self.__exiting = False
         self.setup()
@@ -40,8 +40,11 @@ class ClientApp(Client, Window):
             thread.start()
             logger.info(f"Started {thread.name}")
             self.mainloop()
-        except BaseException:
-            logger.exception("Caught error while running")
+        except BaseException as error:
+            if not isinstance(error, KeyboardInterrupt):
+                logger.exception("Caught error while running")
+            else:
+                logger.info("Caught KeyboardInterrput")
             self.prepare_exit()
             self.mainloop()
         finally:
@@ -53,6 +56,7 @@ class ClientApp(Client, Window):
         self.apply_config()
         self.on_close(self.prepare_exit)
         self.on_finish(lambda _: self.event_generate(self.DESTORY_EVENT))
+        self.root.chat.input.textinput.focus_force()
 
     def prepare_exit(self):
         """Close application gracefully."""
@@ -70,13 +74,11 @@ class ClientApp(Client, Window):
         # to remove focus on username when somewhere else is clicked
         self.bind_all("<Button-1>", lambda event: event.widget.focus_set(), "+")
 
-        # remove focus from custom titlebar buttons if exists
-        try:
+        if self.is_customized:
+            # removes focus from custom titlebar buttons if exists
             self.titlebar.minimize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
             self.titlebar.maximize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
             self.titlebar.close.bind("<FocusIn>", lambda _:self.focus_set(), "+")
-        except AttributeError:
-            pass
 
     def show_message(self, **kwargs):
         """Shows the message in chat.

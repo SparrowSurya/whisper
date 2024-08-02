@@ -1,6 +1,6 @@
 import asyncio
 import concurrent.futures
-from typing import Callable
+from typing import Callable, List
 
 from .core.client import BaseClient
 from .core.streamcodec import StreamEncoder, StreamDecoder
@@ -35,11 +35,17 @@ class Client(EventThread, BaseClient):
         self.username = username
         self.encoding =encoding
         self.chunk_size = chunk_size
+
         self.response = {
             "message": self.show_message,
-            "set-name": self.update_username,
+            "set-username": self.update_username,
             "exit": self.server_exit,
+            "chat-info": self.update_chat_info,
+            "user-rename": self.user_renamed,
+            "user-join": self.user_joined,
+            "user-exit": self.user_exited,
         }
+        self.others = []
 
     def send(self,
         kind: str,
@@ -101,12 +107,31 @@ class Client(EventThread, BaseClient):
         await EventThread.exit_main(self)
 
     def update_username(self, name: str, **kwargs):
-        """Updates username."""
+        """Response for `set-username`. Updates username."""
         self.username = name
 
     def show_message(self, user: str | None, text: str):
-        """Show the message on chat."""
+        """Response for `message`. Does nothing!"""
 
-    def server_exit(self, **kwargs):
-        """Server is closing."""
+    def server_exit(self, reason: str = "", **kwargs):
+        """Response `exit` from server. Server is closing due to some reason."""
+        if reason:
+            logger.info(f"Server closing due to {reason}")
         self.stop()
+
+    def update_chat_info(self, users: List[str], **kwargs):
+        """Response `chat-info` from server. Information about the chat."""
+        self.others = users
+
+    def user_joined(self, user: str, **kwargs):
+        """Response `user-join` from server. Updates the users list."""
+        self.others.append(user)
+
+    def user_exited(self, user: str, reason: str = "", **kwargs):
+        """Response `user-exit` from server. Updates users list."""
+        self.others.remove(user)
+
+    def user_renamed(self, old: str, new: str, **kwargs):
+        """Response `user-rename` from server. Updates user in users list."""
+        self.others.remove(old)
+        self.others.append(new)

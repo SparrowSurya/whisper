@@ -90,12 +90,16 @@ class ClientApp(Client, Window):
 
     def update_username(self, name: str, **kwargs):
         """Update the username."""
+        changed = name != self.username
         Client.update_username(self, name, **kwargs)
-        self.root.chat.update_username(name)
+        if changed:
+            self.root.chat.update_username(name)
+            self.root.chat.show_info(f"you renamed to {name}")
 
-    def server_exit(self, **kwargs):
+    def server_exit(self, reason: str = "", **kwargs):
         """Server is closing."""
-        logger.info("Server is closing")
+        if reason:
+            logger.info(f"Server closing due to {reason}")
         self.prepare_exit()
 
     async def init_main(self):
@@ -104,3 +108,15 @@ class ClientApp(Client, Window):
         # show the server address on topbar
         ip, port = self.servername()
         self.root.chat.topbar.set_servername(f"{ip}:{port}")
+
+    def user_joined(self, user: str, **kwargs):
+        super().user_joined(user, **kwargs)
+        self.root.chat.show_info(f"{user} joined!")
+
+    def user_exited(self, user: str, reason: str = "", **kwargs):
+        super().user_exited(user, reason, **kwargs)
+        self.root.chat.show_info(f"{user} left!")
+
+    def user_renamed(self, old: str, new: str, **kwargs):
+        super().user_renamed(old, new, **kwargs)
+        self.root.chat.show_info(f"{old} renamed to {new}!")

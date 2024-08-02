@@ -45,10 +45,11 @@ class Chat(Frame, BaseChat):
 
     def show_message(self, user: str | None, text: str, **kwargs):
         """Shows the message on the chat."""
-        if user is None:
-            self.view.show_info(text)
-        else:
-            self.view.show_message(user, text)
+        self.view.show_message(user, text)
+
+    def show_info(self, message: str):
+        """Shows the information on chat."""
+        self.view.show_info(message)
 
     def update_username(self, name: str, **kwargs):
         """Change the displayed username."""

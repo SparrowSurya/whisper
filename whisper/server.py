@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from typing import List, Iterable
+from typing import List, Tuple
 
 from .core import EventThread, StreamEncoder, StreamDecoder
 from .core.server import BaseServer, ConnectionHandle, ServerConnection, Response
@@ -8,7 +8,6 @@ from .core.logger import logger
 from .settings import CHUNK_SIZE, ENCODING, TIMEOUT
 
 
-# TODO - seperate thread to listen for keyboard interrupt when closing server.
 class Server(EventThread, BaseServer):
     """Chat server backend.
 
@@ -44,13 +43,28 @@ class Server(EventThread, BaseServer):
         self.chunk_size = chunk_size
         self.timeout = timeout
 
+        self.exit_reason = None
         self.clients: List[ConnectionHandle] = []
         self.requests = {
             "hello": self.hello_request,
-            "set-name": self.set_name_request,
+            "set-name": self.set_username_request,
             "exit": self.exit_request,
             "message": self.message_request,
         }
+
+    def valid_username(self, username: str) -> bool:
+        """Validates given username."""
+        # limitied character set
+        for ch in username:
+            if not (ch.isalnum() or ch in "-_."):
+                return False
+
+        # name should not be taken by other client
+        name = username.lower()
+        for client in self.clients:
+            if client.serve and client.username.lower() == name:
+                return False
+        return True
 
     async def listen(self):
         """
@@ -74,7 +88,7 @@ class Server(EventThread, BaseServer):
         self.clients.append(conn)
 
     def unregister(self, conn: ConnectionHandle):
-        """Unregister the connection after closing it."""
+        """Unregister the connection and close it."""
         self.close(conn)
         self.clients.remove(conn)
 
@@ -130,58 +144,148 @@ class Server(EventThread, BaseServer):
                 if conn.serve:
                     await super().write(conn, data)
 
-    def hello_request(self, conn: ConnectionHandle, **kwargs) -> Iterable[Response] | Response | None:
-        """Response for `hello` request."""
-        response = self.set_name_request(conn, **kwargs)
-        if response:
-            conn.data.pop("timeout").cancel()
-            logger.debug(f"Timeout removed for {conn.address}")
-            conn.serve = True
-            return response
-        return None
+    def hello_request(self,
+        conn: ConnectionHandle,
+        **kwargs,
+    ) -> Tuple[Response] | None:
+        """Response for `hello` request.
 
-    def set_name_request(self, conn: ConnectionHandle, name: str, **kwargs) -> Iterable[Response]:
-        """Response for 'set-name' request."""
-        old_name = conn.username
-        conn.data["username"] = name
+        Client must provide a valid username to be served.
 
-        content1 = {
-            "kind": "message",
-            "text": f"{old_name} renamed to {name}!" if old_name else f"{name} joined!",
-            "user": None,
-        }
-        receivers1 = tuple(client for client in self.clients)
+        Valid `hello` Request:
+        >>> {
+        >>>     "kind": "hello",
+        >>>     "name": "<name>",
+        >>> }
 
-        content2 = {
-            "kind": "set-name",
-            "name": conn.data["username"],
-        }
-        receivers2 = (conn,)
+        Responses:
+        * set-name & chat-info: to sender
+        * user-join: to other
+        """
+        responses = self.set_username_request(conn, **kwargs)
+        if not responses:
+            return None
 
-        return (
-            Response(content2, receivers2),
-            Response(content1, receivers1),
+        users = tuple(
+            client.username for client in self.clients
+            if client.serve and not client.close
         )
 
-    def exit_request(self, conn: ConnectionHandle, **kwargs) -> Iterable[Response] | Response | None:
-        """Response for `exit` request."""
+        response3 = Response(
+            content={
+                "kind": "chat-info",
+                "users": users,
+            },
+            receivers=(conn,),
+        )
+
+        self.remove_timeout(conn)
+        conn.serve = True
+        return *responses, response3
+
+    def set_username_request(self,
+        conn: ConnectionHandle, name: str,
+        **kwargs,
+    ) -> Tuple[Response] | None:
+        """Response for 'set-username' request.
+
+        This can be used to set new or rename exisitng username. The
+        given username is verified for validity.
+
+        Valid `set-username` request:
+        >>> {
+        >>>     "kind": "set-username",
+        >>>     "username": "<username>",
+        >>> }
+
+        Responses:
+        * set-username; to sender
+        * user-rename: to other
+        """
+        old = conn.username
+        new = name.strip()
+        if not self.valid_username(new):
+            return None # TODO - provide error response
+
+        conn.username = new
+        response1 = Response(
+            content={
+                "kind": "set-username",
+                "name": new,
+            },
+            receivers=(conn,),
+        )
+
+        # user is joined or renamed
+        if old is None:
+            response2 = Response(
+                content={
+                    "kind": "user-join",
+                    "user": new,
+                },
+                receivers=tuple(client for client in self.clients if client != conn),
+            )
+        else:
+            response2 = Response(
+                content={
+                    "kind": "user-rename",
+                    "old": old,
+                    "new": new,
+                },
+                receivers=tuple(client for client in self.clients if client != conn),
+            )
+
+        return response1, response2
+
+    def exit_request(self,
+        conn: ConnectionHandle,
+        reason: str = "",
+        **kwargs,
+    ) -> Tuple[Response] | Response | None:
+        """Response for `exit` request.
+
+        This removes the user from chat and closes connection. Client is
+        responsible for managing the updation of users in chat.
+
+        Valid `exit` request:
+        >>> {
+        >>>     "kind": "exit",
+        >>>     "reason": "[reason]",
+        >>> }
+
+        Response:
+        * user-exit - to others
+        """
         conn.close = True
         if not conn.serve:
             return None
 
         conn.serve = False
-        content = {
-            "kind": "message",
-            "user": None,
-            "text": f"{conn.username} exited!",
-        }
-        receivers = tuple(client for client in self.clients if client != conn)
-        return Response(content, receivers)
+        response = Response(
+            content = {
+                "kind": "user-exit",
+                "user": conn.username,
+            },
+            receivers = tuple(client for client in self.clients if client != conn),
+        )
+        return response
 
-    def message_request(
-        self, conn: ConnectionHandle, text: str, **kwargs
+    def message_request(self,
+        conn: ConnectionHandle,
+        text: str,
+        **kwargs,
     ) -> Response | None:
-        """Response for `message` request."""
+        """Response for `message` request.
+
+        Valid `message` request:
+        >>> {
+        >>>     "kind": "message",
+        >>>     "text": "<text message>",
+        >>> }
+
+        Response:
+        * message - to all
+        """
         if not conn.serve:
             return
 
@@ -200,8 +304,13 @@ class Server(EventThread, BaseServer):
         conn.data["timeout"] = fut
         logger.debug(f"Timeout {self.timeout}s set on {conn.address}")
 
+    def remove_timeout(self, conn: ConnectionHandle):
+        """Removes timeout on user."""
+        conn.data.pop("timeout").cancel()
+        logger.debug(f"Timeout removed for {conn.address}")
+
     async def timeout_handler(self, conn: ConnectionHandle):
-        """COroutine that manages timeout on a connection."""
+        """Coroutine that manages timeout on a connection."""
         await asyncio.sleep(self.timeout)
         if conn.data.get("timeout", None):
             conn.close = True
@@ -223,15 +332,25 @@ class Server(EventThread, BaseServer):
 
         except KeyboardInterrupt:
             logger.info("Caught Keyboard Interrupt - closing the server")
-            self.stop()
+            self.exit_reason = "force shutdown"
+        except Exception as error:
+            logger.exception(f"Server crash due to {type(error).__name__}")
+            self.exit_reason = "server crash"
         finally:
+            self.stop()
             thread.join()
             logger.info(f"{thread.name} joined!")
 
     async def inform_exit(self):
-        """Informs the connections about the shutdown."""
+        """Informs the connections about the server exit."""
         await self.send(
-            Response({"kind": "exit"}, self.clients)
+            Response(
+                content={
+                    "kind": "exit",
+                    "reason": self.exit_reason,
+                },
+                receivers=self.clients,
+            )
         )
 
     async def init_main(self):

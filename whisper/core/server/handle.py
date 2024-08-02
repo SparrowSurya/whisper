@@ -31,6 +31,11 @@ class ConnectionHandle:
         """Provides the username of the client."""
         return self.data.get("username", None)
 
+    @username.setter
+    def username(self, username: str):
+        """Sets username of the client."""
+        self.data["username"] = username
+
     @property
     def name(self) -> str:
         """Provides the name for connection."""

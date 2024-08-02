@@ -70,6 +70,6 @@ class TopBar(Frame):
 
     def change_username(self, event=None):
         name = self.username.get().strip()
-        if name:
+        if name and name != self.app.username:
             self.app.send("set-name", name=name)
         self.disable_edit_username()

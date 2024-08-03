@@ -94,14 +94,14 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
             return
 
         self.titlebar = Titlebar(self, height=TITLEBAR_HEIGHT)
-        self.grip_n = Frame(self, cursor="top_side")
-        self.grip_s = Frame(self, cursor="bottom_side")
-        self.grip_e = Frame(self, cursor="right_side")
-        self.grip_w = Frame(self, cursor="left_side")
-        self.grip_ne = Frame(self, cursor="top_right_corner")
-        self.grip_nw = Frame(self, cursor="top_left_corner")
-        self.grip_se = Frame(self, cursor="bottom_right_corner")
-        self.grip_sw = Frame(self, cursor="bottom_left_corner")
+        self.grip_n = Frame(self)
+        self.grip_s = Frame(self)
+        self.grip_e = Frame(self)
+        self.grip_w = Frame(self)
+        self.grip_ne = Frame(self)
+        self.grip_nw = Frame(self)
+        self.grip_se = Frame(self)
+        self.grip_sw = Frame(self)
 
         self.grip_nw.grid(row=0, column=0, sticky="nsew")
         self.grip_n.grid(row=0, column=1, sticky="nsew")
@@ -123,15 +123,6 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        self.grip_n.bind("<Button-1>", lambda e: self.resize("n", e))
-        self.grip_s.bind("<Button-1>", lambda e: self.resize("s", e))
-        self.grip_e.bind("<Button-1>", lambda e: self.resize("e", e))
-        self.grip_w.bind("<Button-1>", lambda e: self.resize("w", e))
-        self.grip_ne.bind("<Button-1>", lambda e: self.resize("ne", e))
-        self.grip_nw.bind("<Button-1>", lambda e: self.resize("nw", e))
-        self.grip_se.bind("<Button-1>", lambda e: self.resize("se", e))
-        self.grip_sw.bind("<Button-1>", lambda e: self.resize("sw", e))
-
         self.titlebar.close.config(command=self.destroy)
         self.titlebar.maximize.config(command=self.toggle_maximize)
         self.titlebar.minimize.config(command=self.minimize)
@@ -146,6 +137,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         )
         self.bind("<F11>", lambda _: self.toggle_fullscreen(), "+")
         self.on_close(self.destroy)
+        self.enable_resize()
 
     def _title(self, title: str | None = None) -> None | str:
         """Set or get title on titlebar. Use this instead `wm_title`.
@@ -303,6 +295,46 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         if hasattr(self, "root"):
             return self.root
         return Frame(parent or self)
+
+    def enable_resize(self):
+        """Bind the grip to resize."""
+        if not self.is_customized:
+            return
+        grips = (
+            self.grip_n, self.grip_s, self.grip_e, self.grip_w,
+            self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
+        )
+        cursors = (
+            "top_side", "bottom_side", "right_side", "left_side",
+            "top_right_corner", "top_left_corner", "bottom_right_corner", "bottom_left_corner",
+        )
+
+        for grip, cursor in zip(grips, cursors):
+            grip.config(cursor=cursor)
+
+        self._resize_bindings = (
+            self.grip_n.bind("<Button-1>", lambda e: self.resize("n", e)),
+            self.grip_s.bind("<Button-1>", lambda e: self.resize("s", e)),
+            self.grip_e.bind("<Button-1>", lambda e: self.resize("e", e)),
+            self.grip_w.bind("<Button-1>", lambda e: self.resize("w", e)),
+            self.grip_ne.bind("<Button-1>", lambda e: self.resize("ne", e)),
+            self.grip_nw.bind("<Button-1>", lambda e: self.resize("nw", e)),
+            self.grip_se.bind("<Button-1>", lambda e: self.resize("se", e)),
+            self.grip_sw.bind("<Button-1>", lambda e: self.resize("sw", e)),
+        )
+
+    def disable_resize(self):
+        """Unbinds the grip."""
+        if not hasattr(self, "_resize_bindings"):
+            return
+
+        grips = (
+            self.grip_n, self.grip_s, self.grip_e, self.grip_w,
+            self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
+        )
+        for grip, bind_id in zip(grips, self._resize_bindings):
+            grip.unbind("<Button-1>", bind_id)
+            grip.config(cursor="")
 
     def geometry(
         self,

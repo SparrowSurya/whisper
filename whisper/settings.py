@@ -17,7 +17,7 @@ DEFAULT_ICON_PATH = "./whisper/assets/default_icon.png"
 
 # window titlebar height (win32 platform)
 MIN_WINDOW_WIDTH = 256
-MIN_WINDOW_HEIGHT = 42
+MIN_WINDOW_HEIGHT = 52
 TITLEBAR_HEIGHT = 40
 
 TITLE = "Whisper"

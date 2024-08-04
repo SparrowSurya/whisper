@@ -4,39 +4,51 @@ from typing import Callable, Tuple
 
 from whisper.settings import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, TITLEBAR_HEIGHT
 from .widgets import Frame
+from .grip import Grip
 from .titlebar import Titlebar
 
 
 class CustomWindowMixin:
     """
-    The class adds functionality to remove the default decoration on the
-    tkinter window. This may not be reversed.
+    The class adds functionality to remove the default titlebar and
+    other decoration on the tkinter window on supported platforms.
+
+    NOTE:
+    1. This might not be reversed in some platforms.
+    2. currently supports `win32` platform only.
     """
 
     def __init__(self):
-        self._is_customized = False
+        self.__is_custom_window = False
 
     @property
-    def is_customized(self) -> bool:
-        """Informs whethere window is customized or not."""
-        return self._is_customized
+    def is_custom_window(self) -> bool:
+        """Informs if window has default decoration removed."""
+        return self.__is_custom_window
 
-    def mark_uncustomized(self):
-        """Marks the internal variable uncustomized."""
-        self._is_customized = False
+    def reset_plain(self):
+        """Resets the `is_custom_window`.
+
+        NOTE: This is intended to be used in rare cases only as this
+        does not reverse the changes done by `remove_default` method.
+        """
+        self.__is_custom_window = False
 
     if sys.platform == "win32":
 
         def remove_default(self):
-            """Remove default decoration on win32 platform."""
-            self.overrideredirect(1)
-            self.update_idletasks()
-            self.withdraw()
-            self._customize()
+            """Removes the default decoration of window on `win32`
+            platform."""
+            if not self.is_custom_window:
+                self.overrideredirect(1)
+                self.update_idletasks()
+                self.withdraw()
+                self._configure_hwnd()
+                self.__is_custom_window = True
 
-        def _customize(self):
-            """Window hwnd related setting."""
-            if not self.is_customized:
+        def _configure_hwnd(self):
+            """Confiures the HWND settings on `win32`."""
+            if not self.is_custom_window:
                 from ctypes import windll
 
                 GWL_EXSTYLE = -20
@@ -50,20 +62,23 @@ class CustomWindowMixin:
                 windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
                 self.withdraw()
                 self.wm_deiconify()
-                self._is_customized = True
 
     else:
 
         def remove_default(self):
-            """Remove default decoration on unsupported function. Raises `Exception`."""
-            self._is_customized = False
+            """Unsupported platform. Raises `Exception`."""
+            self.__is_custom_window = False
             raise Exception("unable to customize")
 
 
-class CustomWindowTitlebarMixin(CustomWindowMixin):
+class TitlebarMixin(CustomWindowMixin):
     """
     The class provides a custom titlebar and other functionality of
     default window decoration.
+
+    The class removes the default decoration during initilization and
+    creates a custom titlebar with the features supported by the default
+    decorated window.
     """
 
     def __init__(self):
@@ -87,35 +102,43 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
             self.title = self._title
 
     def setup_widgets(self):
-        """Creates the widgets on the window."""
-        self.root = self.get_root()
-        if not self.is_customized:
+        """
+        Creates the widgets on the window. This includes the widgets
+        providing default window functionality if supported.
+        `root` widget is always created.
+
+        NOTE: This should be called only once.
+        """
+        self.root = self.create_root()
+        if not self.is_custom_window:
             self.root.pack(fill="both", expand=1)
             return
 
-        self.titlebar = Titlebar(self, height=TITLEBAR_HEIGHT)
-        self.grip_n = Frame(self)
-        self.grip_s = Frame(self)
-        self.grip_e = Frame(self)
-        self.grip_w = Frame(self)
-        self.grip_ne = Frame(self)
-        self.grip_nw = Frame(self)
-        self.grip_se = Frame(self)
-        self.grip_sw = Frame(self)
+        self.titlebar = self.create_titlebar()
+        self.grip_n = Grip(self, anchor="n")
+        self.grip_s = Grip(self, anchor="s")
+        self.grip_e = Grip(self, anchor="e")
+        self.grip_w = Grip(self, anchor="w")
+        self.grip_ne = Grip(self, anchor="ne")
+        self.grip_nw = Grip(self, anchor="nw")
+        self.grip_se = Grip(self, anchor="se")
+        self.grip_sw = Grip(self, anchor="sw")
 
         self.grip_nw.grid(row=0, column=0, sticky="nsew")
         self.grip_n.grid(row=0, column=1, sticky="nsew")
         self.grip_ne.grid(row=0, column=2, sticky="nsew")
-
         self.grip_w.grid(row=1, column=0, sticky="nsew", rowspan=2)
         self.titlebar.grid(row=1, column=1, sticky="nsew")
         self.grip_e.grid(row=1, column=2, sticky="nsew", rowspan=2)
-
         self.root.grid(row=2, column=1, sticky="nsew")
-
         self.grip_sw.grid(row=3, column=0, sticky="nsew")
         self.grip_s.grid(row=3, column=1, sticky="nsew")
         self.grip_se.grid(row=3, column=2, sticky="nsew")
+
+        self.grips = (
+            self.grip_n, self.grip_s, self.grip_e, self.grip_w,
+            self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
+        )
 
         self.grid_rowconfigure((0, 3), minsize=2, weight=0)
         self.grid_columnconfigure((0, 2), minsize=2, weight=0)
@@ -148,18 +171,19 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
 
     @property
     def is_maximized(self) -> bool:
-        """window maximized state."""
+        """Informs if window is in maximized state."""
         return self.__maximized
 
     def toggle_maximize(self):
-        """Maximize or Restore down functionality."""
+        """Toggles between maximize and restore down state."""
         if self.is_maximized:
             self.restore_down()
         else:
             self.maximize()
 
     def maximize(self):
-        """Maximize window. Hides the grip using geometry."""
+        """Maximises window to screen dimensions. It also hides the grip
+        widgets using clever placement of window and its dimesnions."""
         self.__geometry.append(self.winfo_geometry())
         width, height = self.winfo_screenwidth(), self.winfo_screenheight()
         self.wm_geometry(f"{width+4}x{height+4}+{-2}+{-2}")
@@ -173,21 +197,21 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         self.titlebar.set_maximize()
 
     def minimize(self):
-        """Minimize the window."""
+        """Minimizes the window."""
         self.update_idletasks()
         self.overrideredirect(0)
         self.state("iconic")
-        self.mark_uncustomized()
+        self.reset_plain()
 
     def minimize_reverse(self):
         """Opposite of minize window."""
         self.overrideredirect(1)
         self.update_idletasks()
-        self._customize()
+        self._configure_hwnd()
         self.state("normal")
 
     def move(self, event: tk.Event):
-        """Move the window."""
+        """Event listener on repositioning of the window."""
         x, y = self.winfo_x() - event.x_root, self.winfo_y() - event.y_root
         event.widget.bind(
             "<B1-Motion>",
@@ -196,11 +220,11 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
 
     @property
     def is_fullscreen(self) -> bool:
-        """Window fullscreen state."""
+        """Informs if window is in fullscreen state."""
         return self.__fullscreen
 
     def toggle_fullscreen(self):
-        """Toggle fullscreen on/off."""
+        """Toggle fullscreen."""
         if self.is_fullscreen:
             self.wm_geometry(self.__geometry.pop())
             self.__fullscreen = False
@@ -214,7 +238,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
             self.__fullscreen = True
 
     def resize(self, anchor: str, event: tk.Event):
-        """Manually resize the window."""
+        """Resize event listener on window resizing."""
         ex, ey = event.x_root, event.y_root
 
         x1 = self.winfo_x()
@@ -222,11 +246,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         x2 = x1 + self.winfo_width()
         y2 = y1 + self.winfo_height()
 
-        if self.__minsize:
-            min_width, min_height = self.minsize
-        else:
-            min_width = MIN_WINDOW_WIDTH
-            min_height = MIN_WINDOW_HEIGHT
+        min_width, min_height = self.minsize
 
         def resize(e: tk.Event):
             nonlocal min_width, min_height
@@ -269,7 +289,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
 
     @property
     def minsize(self) -> Tuple[int, int]:
-        """Minimum allowed size of the window."""
+        """Minimum allowed width and height of the window."""
         return self.__minsize or (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
     def set_minsize(self, min_w: int, min_h: int):
@@ -284,57 +304,36 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
 
     # do not overwrite `protocol` method as it works different
     def on_close(self, callback: Callable[[], None]):
-        """Callback when user clicks close button."""
-        if self.is_customized:
+        """Callback when user clicks close button. Use this instead of
+        `wm_protocol`."""
+        if self.is_custom_window:
             self.titlebar.close.config(command=callback)
         else:
             self.wm_protocol("WM_DELETE_WINDOW", callback)
 
-    def get_root(self, parent: tk.Misc | None = None) -> tk.Widget:
-        """Create root element of the window. All child must contained inside it."""
+    def create_root(self, parent: tk.Misc | None = None) -> tk.Widget:
+        """Create root element of the window. All child must be contained inside it."""
         if hasattr(self, "root"):
             return self.root
         return Frame(parent or self)
 
+    def create_titlebar(self, parent: tk.Misc | None = None) -> tk.Widget:
+        """Creates titlebar widget for the window."""
+        if hasattr(self, "titlebar"):
+            return self.titlebar
+        return Titlebar(parent or self, height=TITLEBAR_HEIGHT)
+
     def enable_resize(self):
-        """Bind the grip to resize."""
-        if not self.is_customized:
-            return
-        grips = (
-            self.grip_n, self.grip_s, self.grip_e, self.grip_w,
-            self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
-        )
-        cursors = (
-            "top_side", "bottom_side", "right_side", "left_side",
-            "top_right_corner", "top_left_corner", "bottom_right_corner", "bottom_left_corner",
-        )
-
-        for grip, cursor in zip(grips, cursors):
-            grip.config(cursor=cursor)
-
-        self._resize_bindings = (
-            self.grip_n.bind("<Button-1>", lambda e: self.resize("n", e)),
-            self.grip_s.bind("<Button-1>", lambda e: self.resize("s", e)),
-            self.grip_e.bind("<Button-1>", lambda e: self.resize("e", e)),
-            self.grip_w.bind("<Button-1>", lambda e: self.resize("w", e)),
-            self.grip_ne.bind("<Button-1>", lambda e: self.resize("ne", e)),
-            self.grip_nw.bind("<Button-1>", lambda e: self.resize("nw", e)),
-            self.grip_se.bind("<Button-1>", lambda e: self.resize("se", e)),
-            self.grip_sw.bind("<Button-1>", lambda e: self.resize("sw", e)),
-        )
+        """Bind the grip widgets to resize."""
+        if hasattr(self, "grips"):
+            for grip in self.grips:
+                grip.enable(self.resize)
 
     def disable_resize(self):
-        """Unbinds the grip."""
-        if not hasattr(self, "_resize_bindings"):
-            return
-
-        grips = (
-            self.grip_n, self.grip_s, self.grip_e, self.grip_w,
-            self.grip_ne, self.grip_nw, self.grip_se, self.grip_sw,
-        )
-        for grip, bind_id in zip(grips, self._resize_bindings):
-            grip.unbind("<Button-1>", bind_id)
-            grip.config(cursor="")
+        """Unbinds the grip widgets."""
+        if hasattr(self, "grips"):
+            for grip in self.grips:
+                grip.disable()
 
     def geometry(
         self,
@@ -344,6 +343,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         y: int | None = None,
         *,
         center: bool = False,
+        force: bool = False,
     ):
         """Configure dimensions and position of window.
 
@@ -351,6 +351,7 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
         * width, height - window dimensions.
         * x, y - window position.
         * center - ignores x, y and places it in screen center.
+        * force - ignores the minsize value for resizing the window.
         """
         if center:
             x = int((self.winfo_screenwidth() / 2) - (width / 2))
@@ -359,26 +360,8 @@ class CustomWindowTitlebarMixin(CustomWindowMixin):
             x = x if x is not None else self.winfo_x()
             y = y if y is not None else self.winfo_y()
 
+        if not force:
+            min_w, min_h = self.minsize
+            width = width if width >= min_w else min_w
+            height = height if height >= min_h else min_h
         self.wm_geometry(f"{width}x{height}+{x}+{y}")
-
-
-class CustomTkWindow(CustomWindowTitlebarMixin, tk.Tk):
-    """
-    Custom tkinter window with custom titlebar and all the previous
-    functionality.
-    """
-
-    def __init__(self):
-        tk.Tk.__init__(self)
-        CustomWindowTitlebarMixin.__init__(self)
-
-
-class CustomToplevelWindow(CustomWindowTitlebarMixin, tk.Toplevel):
-    """
-    Custom tkinter toplevel window with custom titlebar and all the previous
-    functionality.
-    """
-
-    def __init__(self):
-        tk.Toplevel.__init__(self)
-        CustomWindowTitlebarMixin.__init__(self)

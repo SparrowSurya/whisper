@@ -223,7 +223,7 @@ class Server(EventThread, BaseServer):
                     "kind": "user-join",
                     "user": new,
                 },
-                receivers=tuple(client for client in self.clients if client != conn),
+                receivers=tuple(self.clients),
             )
         else:
             response2 = Response(

@@ -2,9 +2,9 @@ import threading
 from typing import Self
 
 from .client import Client
-from .ui.window import Window
+from .window import Window
 from .core.logger import logger
-from .settings import DEFAULT_THEME
+from .settings import DEFAULT_THEME, DEFAULT_ICON_PATH
 
 
 class ClientApp(Client, Window):
@@ -74,8 +74,9 @@ class ClientApp(Client, Window):
         # to remove focus on username when somewhere else is clicked
         self.bind_all("<Button-1>", lambda event: event.widget.focus_set(), "+")
 
-        if self.is_customized:
+        if self.is_custom_window:
             # removes focus from custom titlebar buttons if exists
+            self.titlebar.set_icon(DEFAULT_ICON_PATH)
             self.titlebar.minimize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
             self.titlebar.maximize.bind("<FocusIn>", lambda _:self.focus_set(), "+")
             self.titlebar.close.bind("<FocusIn>", lambda _:self.focus_set(), "+")
@@ -110,8 +111,11 @@ class ClientApp(Client, Window):
         self.root.chat.topbar.set_servername(f"{ip}:{port}")
 
     def user_joined(self, user: str, **kwargs):
-        super().user_joined(user, **kwargs)
-        self.root.chat.show_info(f"{user} joined!")
+        if user == self.username:
+            self.root.chat.show_info("You joined!")
+        else:
+            super().user_joined(user, **kwargs)
+            self.root.chat.show_info(f"{user} joined!")
 
     def user_exited(self, user: str, reason: str = "", **kwargs):
         super().user_exited(user, reason, **kwargs)

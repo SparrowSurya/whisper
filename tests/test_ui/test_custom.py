@@ -3,7 +3,8 @@ import unittest
 import tkinter as tk
 
 
-from whisper.ui.custom import CustomWindowMixin, CustomWindowTitlebarMixin, CustomTkWindow
+from whisper.ui.custom import CustomWindowMixin, TitlebarMixin
+from whisper.ui.window import TkWindow
 
 
 REASON_WIN32 = "for win32 platform only"
@@ -31,7 +32,7 @@ class TestCustomWindowMixin(unittest.TestCase):
     def test_customization_on_win32(self):
         self.window.remove_default()
         self.window.update_idletasks()
-        self.assertTrue(self.window.is_customized)
+        self.assertTrue(self.window.is_custom_window)
         self.assertTrue(self.window.wm_overrideredirect(None))
 
     @unittest.skipIf(sys.platform == "win32", REASON_NON_WIN32)
@@ -39,7 +40,7 @@ class TestCustomWindowMixin(unittest.TestCase):
         with self.assertRaises(Exception):
             self.window.remove_default()
             self.window.update_idletasks()
-        self.assertFalse(self.window.is_customized)
+        self.assertFalse(self.window.is_custom_window)
         self.assertFalse(self.window.wm_overrideredirect(None))
 
 
@@ -47,10 +48,10 @@ class TestCustomTitlebar(unittest.TestCase):
     """Test the working of custom titlebar."""
 
     def get_window(self):
-        class TestWindow(CustomWindowTitlebarMixin, tk.Tk):
+        class TestWindow(TitlebarMixin, tk.Tk):
             def __init__(self):
                 tk.Tk.__init__(self)
-                CustomWindowTitlebarMixin.__init__(self)
+                TitlebarMixin.__init__(self)
         return TestWindow()
 
     def setUp(self):
@@ -129,6 +130,6 @@ class TestCustomTitlebar(unittest.TestCase):
 class TestCustomTkWindow(unittest.TestCase):
 
     def test_window_runs(self):
-        window = CustomTkWindow()
+        window = TkWindow("TkWindow")
         window.destroy()
         window.update_idletasks()

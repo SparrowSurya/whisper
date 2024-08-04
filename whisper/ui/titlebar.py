@@ -1,32 +1,27 @@
 import tkinter as tk
 
 from .widgets import Label, Frame, Button
-from whisper.settings import TITLEBAR_HEIGHT, DEFAULT_ICON_PATH
 
 
 class Titlebar(Frame):
-    """
-    TitleBar for the custom window application.
+    """Custom Titlebar widget.
+    Child widgets: icon, title, minimize, maximize, close.
 
     NOTE - The parent of this widget must be `tkinter.Tk` or `tkinter.Toplevel`.
     """
 
-    __theme_attrs__ = {
-        "background": "surfaceContainerLowest",
-    }
+    def __init__(self, master, *args, height: int, **kwargs):
+        """Height is a required parameter of the widget."""
+        super().__init__(master, *args, height=height, **kwargs)
 
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-
-        self.icon_image = tk.PhotoImage(file=DEFAULT_ICON_PATH)
+        self.icon_image = tk.PhotoImage()
         self.blank_img = tk.PhotoImage()
 
         self.icon = Label(
             self,
             image=self.icon_image,
             compound="center",
-            width=TITLEBAR_HEIGHT,
-            height=TITLEBAR_HEIGHT,
+            width=height,
         )
         self.title = Label(
             self,
@@ -36,7 +31,6 @@ class Titlebar(Frame):
             font=("Open Sans", 14, "normal"),
             justify="left",
             anchor="w",
-            height=TITLEBAR_HEIGHT,
         )
         self.minimize = Button(
             self,
@@ -46,7 +40,6 @@ class Titlebar(Frame):
             font=("Roboto", 24, "bold"),
             relief="flat",
             width=32,
-            height=TITLEBAR_HEIGHT,
             padx=8,
             highlightthickness=0,
             border=0,
@@ -60,7 +53,6 @@ class Titlebar(Frame):
             font=("Roboto", 24, "bold"),
             relief="flat",
             width=32,
-            height=TITLEBAR_HEIGHT,
             padx=8,
             highlightthickness=0,
             border=0,
@@ -74,7 +66,6 @@ class Titlebar(Frame):
             font=("Roboto", 24, "bold"),
             relief="flat",
             width=32,
-            height=TITLEBAR_HEIGHT,
             padx=8,
             highlightthickness=0,
             border=0,
@@ -83,14 +74,48 @@ class Titlebar(Frame):
 
         self.icon.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
         self.title.grid(row=0,column=1, sticky="nsew", padx=0, pady=0)
-        self.minimize.grid(row=0, column=2, sticky="nse", padx=0, pady=0)
-        self.maximize.grid(row=0, column=3, sticky="nse", padx=0, pady=0)
-        self.close.grid(row=0, column=4, sticky="nse", padx=0, pady=0)
+        self.minimize.grid(row=0, column=2, sticky="nsew", padx=0, pady=0)
+        self.maximize.grid(row=0, column=3, sticky="nsew", padx=0, pady=0)
+        self.close.grid(row=0, column=4, sticky="nsew", padx=0, pady=0)
 
         self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure((0,2,3,4), minsize=45)
-        self.grid_rowconfigure(0, minsize=TITLEBAR_HEIGHT)
+        self.grid_columnconfigure((0,2,3,4), minsize=height)
+        self.grid_rowconfigure(0, minsize=height)
 
+    def set_title(self, title: str):
+        """Set title on titlebar."""
+        self.title.config(text=title)
+
+    def get_title(self) -> str:
+        """Get title on titlebar."""
+        return self.title.cget("text")
+
+    def set_icon(self, file: str | bytes):
+        """set icon on titlebar."""
+        self.icon_image = tk.PhotoImage(file=file)
+        self.icon.config(image=self.icon_image)
+
+    def set_restore_down(self):
+        """Set the restore down glyph instead maximize."""
+        self.maximize.config(text="")
+
+    def set_maximize(self):
+        """Set the maximize glyph instead restore down."""
+        self.maximize.config(text="")
+
+    def hide_minimize(self):
+        """Hide minimize button in titlebar."""
+        self.minimize.grid_remove()
+        self.grid_columnconfigure(2, minsize=0)
+
+    def hide_maximize(self):
+        """Hide maximize toggle button."""
+        self.maximize.grid_remove()
+        self.grid_columnconfigure(3, minsize=0)
+
+    def config_theme(self):
+        """Use if the master is a child of `ThemeMixin` and has `theme`
+        attribute. It also binds the buttons with hover and click effect."""
         self.icon.__theme_attrs__ = {
             "background": "surfaceContainerLowest",
         }
@@ -124,58 +149,26 @@ class Titlebar(Frame):
         self.minimize.bind(
             "<Enter>",
             lambda _: self.minimize.config(background=self.master.theme.surfaceContainerHigh),
-            "+",
         )
         self.minimize.bind(
             "<Leave>",
             lambda _: self.minimize.config(background=self.master.theme.surfaceContainerLowest),
-            "+",
         )
 
         self.maximize.bind(
             "<Enter>",
             lambda _: self.maximize.config(background=self.master.theme.surfaceContainerHigh),
-            "+",
         )
         self.maximize.bind(
             "<Leave>",
             lambda _: self.maximize.config(background=self.master.theme.surfaceContainerLowest),
-            "+",
         )
 
         self.close.bind(
             "<Enter>",
             lambda _: self.close.config(background=self.master.theme.errorContainer),
-            "+",
         )
         self.close.bind(
             "<Leave>",
             lambda _: self.close.config(background=self.master.theme.surfaceContainerLowest),
-            "+",
         )
-
-    def set_title(self, title: str, justify: str = "left"):
-        """Sets title on titlebar."""
-        self.title.config(text=title, justify=justify)
-
-    def get_title(self) -> str:
-        """Get title on titlebar."""
-        return self.title.cget("text")
-
-    def set_restore_down(self):
-        """Sets the restore down glyph instead maximize."""
-        self.maximize.config(text="")
-
-    def set_maximize(self):
-        """Sets the maximize glyph instead restore down."""
-        self.maximize.config(text="")
-
-    def hide_minimize(self):
-        """Hide minimize button in titlebar."""
-        self.minimize.grid_remove()
-        self.grid_columnconfigure(2, minsize=0)
-
-    def hide_maximize(self):
-        """Hide maximize toggle button."""
-        self.maximize.grid_remove()
-        self.grid_columnconfigure(3, minsize=0)

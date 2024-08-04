@@ -10,6 +10,10 @@ class Titlebar(Frame):
     NOTE - The parent of this widget must be `tkinter.Tk` or `tkinter.Toplevel`.
     """
 
+    __theme_attrs__ = {
+        "background": "surfaceContainerLowest",
+    }
+
     def __init__(self, master, *args, height: int, **kwargs):
         """Height is a required parameter of the widget."""
         super().__init__(master, *args, height=height, **kwargs)
@@ -22,57 +26,62 @@ class Titlebar(Frame):
             image=self.icon_image,
             compound="center",
             width=height,
+            height=height,
         )
         self.title = Label(
             self,
             text="",
             image=self.blank_img,
             compound="center",
-            font=("Open Sans", 14, "normal"),
+            font=("Roboto", 12, "normal"),
             justify="left",
             anchor="w",
+            height=height,
         )
         self.minimize = Button(
             self,
             text="",
             image=self.blank_img,
             compound="center",
-            font=("Roboto", 24, "bold"),
+            font=("Roboto", 14, "bold"),
             relief="flat",
-            width=32,
+            width=28,
             padx=8,
             highlightthickness=0,
             border=0,
             borderwidth=0,
+            height=height,
         )
         self.maximize = Button(
             self,
             text="",
             image=self.blank_img,
             compound="center",
-            font=("Roboto", 24, "bold"),
+            font=("Roboto", 14, "bold"),
             relief="flat",
-            width=32,
+            width=28,
             padx=8,
             highlightthickness=0,
             border=0,
             borderwidth=0,
+            height=height,
         ) # "" Restore Down, "" maximize
         self.close = Button(
             self,
             text="",
             image=self.blank_img,
             compound="center",
-            font=("Roboto", 24, "bold"),
+            font=("Roboto", 14, "bold"),
             relief="flat",
-            width=32,
+            width=28,
             padx=8,
             highlightthickness=0,
             border=0,
             borderwidth=0,
+            height=height,
         )
 
-        self.icon.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        self.icon.grid(row=0, column=0, sticky="nsew", padx=4, pady=0)
         self.title.grid(row=0,column=1, sticky="nsew", padx=0, pady=0)
         self.minimize.grid(row=0, column=2, sticky="nsew", padx=0, pady=0)
         self.maximize.grid(row=0, column=3, sticky="nsew", padx=0, pady=0)

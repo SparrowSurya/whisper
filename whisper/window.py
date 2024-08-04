@@ -1,11 +1,10 @@
 import tkinter as tk
 
 from .ui.root import Root
-from .ui.theme import ThemeMixin
 from .ui.window import TkWindow
 
 
-class Window(TkWindow, ThemeMixin):
+class Window(TkWindow):
     """Tkinter based GUI for the application."""
 
     DESTORY_EVENT = "<<Exit>>"

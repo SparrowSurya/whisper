@@ -294,7 +294,7 @@ class TitlebarMixin(CustomWindowMixin):
 
     def set_minsize(self, min_w: int, min_h: int):
         """Set minimum width and height of the window."""
-        if min_w not in range(1, self.winfo_screenwodth()) or min_h not in range(
+        if min_w not in range(1, self.winfo_screenwidth()) or min_h not in range(
             1, self.winfo_screenheight()
         ):
             raise ValueError(
@@ -317,7 +317,7 @@ class TitlebarMixin(CustomWindowMixin):
             return self.root
         return Frame(parent or self)
 
-    def create_titlebar(self, parent: tk.Misc | None = None) -> tk.Widget:
+    def create_titlebar(self, parent: tk.Misc | None = None) -> Titlebar:
         """Creates titlebar widget for the window."""
         if hasattr(self, "titlebar"):
             return self.titlebar

@@ -1,9 +1,10 @@
 import tkinter as tk
 
+from .theme import ThemeMixin
 from .custom import TitlebarMixin
 
 
-class TkWindow(TitlebarMixin, tk.Tk):
+class TkWindow(TitlebarMixin, ThemeMixin, tk.Tk):
     """Custom tkinter window with custom titlebar."""
 
     def __init__(self, title: str, *args, **kwargs):
@@ -13,7 +14,7 @@ class TkWindow(TitlebarMixin, tk.Tk):
         self.on_close(self.destroy)
 
 
-class ToplevelWindow(TitlebarMixin, tk.Toplevel):
+class ToplevelWindow(TitlebarMixin, ThemeMixin, tk.Toplevel):
     """Custom tkinter toplevel window with custom titlebar."""
 
     def __init__(self, title: str, *args, **kwargs):

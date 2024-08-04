@@ -142,7 +142,7 @@ class TitlebarMixin(CustomWindowMixin):
 
         self.grid_rowconfigure((0, 3), minsize=2, weight=0)
         self.grid_columnconfigure((0, 2), minsize=2, weight=0)
-        self.grid_rowconfigure(1, minsize=TITLEBAR_HEIGHT)
+        self.grid_rowconfigure(1, minsize=self.titlebar.winfo_height())
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(1, weight=1)
 

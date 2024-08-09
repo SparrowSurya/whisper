@@ -3,8 +3,8 @@ import unittest
 import tkinter as tk
 
 
-from whisper.ui.custom import CustomWindowMixin, TitlebarMixin
-from whisper.ui.window import TkWindow
+from ui.modified import ModifiedWindowMixin, TitlebarMixin
+from ui.window import TkWindow
 
 
 REASON_WIN32 = "for win32 platform only"
@@ -15,10 +15,10 @@ class TestCustomWindowMixin(unittest.TestCase):
     """Test the customization working."""
 
     def get_window(self):
-        class TestWindow(CustomWindowMixin, tk.Tk):
+        class TestWindow(ModifiedWindowMixin, tk.Tk):
             def __init__(self):
                 tk.Tk.__init__(self)
-                CustomWindowMixin.__init__(self)
+                ModifiedWindowMixin.__init__(self)
         return TestWindow()
 
     def setUp(self):
@@ -30,17 +30,17 @@ class TestCustomWindowMixin(unittest.TestCase):
 
     @unittest.skipIf(sys.platform != "win32", REASON_WIN32)
     def test_customization_on_win32(self):
-        self.window.remove_default()
+        self.window.modify_window()
         self.window.update_idletasks()
-        self.assertTrue(self.window.is_custom_window)
+        self.assertTrue(self.window.is_modified)
         self.assertTrue(self.window.wm_overrideredirect(None))
 
     @unittest.skipIf(sys.platform == "win32", REASON_NON_WIN32)
     def test_customization_on_non_win32(self):
         with self.assertRaises(Exception):
-            self.window.remove_default()
+            self.window.modify_window()
             self.window.update_idletasks()
-        self.assertFalse(self.window.is_custom_window)
+        self.assertFalse(self.window.is_modified)
         self.assertFalse(self.window.wm_overrideredirect(None))
 
 

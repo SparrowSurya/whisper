@@ -200,7 +200,7 @@ class TitlebarMixin(ModifiedWindowMixin):
         self.update_idletasks()
         self.overrideredirect(0)
         self.state("iconic")
-        self.reset_plain()
+        self.undo_modification()
 
     def undo_minimize(self):
         """Opposite of minize window."""

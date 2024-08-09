@@ -1,7 +1,9 @@
 import tkinter as tk
 
-from .ui.root import Root
-from .ui.window import TkWindow
+from ui.window import TkWindow
+from .components.root import Root
+from .components.titlebar import Titlebar
+from whisper.settings import TITLEBAR_HEIGHT, MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
 
 
 class Window(TkWindow):
@@ -17,10 +19,10 @@ class Window(TkWindow):
         TkWindow.__init__(self, title, *args, **kwargs)
 
         self.bind(self.DESTORY_EVENT, self.destroy)
-        self.on_close(self.destroy)
 
-        if self.is_custom_window:
+        if self.is_modified:
             self.titlebar.config_theme()
+            self.set_minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
     def destroy(self, event=None):
         """Destroy the window."""
@@ -34,3 +36,8 @@ class Window(TkWindow):
         if hasattr(self, "root"):
             return self.root
         return Root(parent or self)
+
+    def create_titlebar(self, parent: tk.Misc | None = None) -> Titlebar:
+        if hasattr(self, "titlebar"):
+            return self.titlebar
+        return Titlebar(parent or self, height=TITLEBAR_HEIGHT)

@@ -5,9 +5,11 @@ from .widgets import Label, Frame, Button
 
 class Titlebar(Frame):
     """Custom Titlebar widget.
+
     Child widgets: icon, title, minimize, maximize, close.
 
-    NOTE - The parent of this widget must be `tkinter.Tk` or `tkinter.Toplevel`.
+    NOTE - The parent of this widget must be instance of `tkinter.Tk`
+    or `tkinter.Toplevel`.
     """
 
     __theme_attrs__ = {
@@ -121,63 +123,3 @@ class Titlebar(Frame):
         """Hide maximize toggle button."""
         self.maximize.grid_remove()
         self.grid_columnconfigure(3, minsize=0)
-
-    def config_theme(self):
-        """Use if the master is a child of `ThemeMixin` and has `theme`
-        attribute. It also binds the buttons with hover and click effect."""
-        self.icon.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-        }
-
-        self.title.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-            "foreground": "onSurface",
-        }
-
-        self.minimize.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-            "foreground": "onSurface",
-            "activebackground": "surfaceBright",
-            "activeforeground": "onSurface",
-        }
-
-        self.maximize.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-            "foreground": "onSurface",
-            "activebackground": "surfaceBright",
-            "activeforeground": "onSurface",
-        }
-
-        self.close.__theme_attrs__ = {
-            "background": "surfaceContainerLowest",
-            "foreground": "onSurface",
-            "activebackground": "onError",
-            "activeforeground": "onSurface",
-        }
-
-        self.minimize.bind(
-            "<Enter>",
-            lambda _: self.minimize.config(background=self.master.theme.surfaceContainerHigh),
-        )
-        self.minimize.bind(
-            "<Leave>",
-            lambda _: self.minimize.config(background=self.master.theme.surfaceContainerLowest),
-        )
-
-        self.maximize.bind(
-            "<Enter>",
-            lambda _: self.maximize.config(background=self.master.theme.surfaceContainerHigh),
-        )
-        self.maximize.bind(
-            "<Leave>",
-            lambda _: self.maximize.config(background=self.master.theme.surfaceContainerLowest),
-        )
-
-        self.close.bind(
-            "<Enter>",
-            lambda _: self.close.config(background=self.master.theme.errorContainer),
-        )
-        self.close.bind(
-            "<Leave>",
-            lambda _: self.close.config(background=self.master.theme.surfaceContainerLowest),
-        )

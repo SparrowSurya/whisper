@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from .theme import ThemeMixin
-from .custom import TitlebarMixin
+from .modified import TitlebarMixin
 
 
 class TkWindow(TitlebarMixin, ThemeMixin, tk.Tk):

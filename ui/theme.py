@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import json
-from typing import Mapping, Self
+from typing import Mapping, Self, Dict
 
 
 @dataclass(repr=False, frozen=True)
@@ -100,7 +100,7 @@ class ThemeMixin:
     * `apply_theme_child` = control the theme applied on child widget.
     """
 
-    __theme_attrs__: Theme | None = None
+    __theme_attrs__: Dict[str, str] | None = None
     """Defines the semantic name for each attribute."""
 
     def get_theme_attrs(self) -> Mapping[str, str]:

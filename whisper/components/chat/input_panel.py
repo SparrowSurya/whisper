@@ -1,7 +1,7 @@
-import tkinter as tk
+from tkinter import PhotoImage
 
-from whisper.ui.widgets import Frame, Text, Button
-from whisper.ui.utils import dynamic_text_height
+from ui.widgets import Frame, Button
+from whisper.components.textinput import MultilineTextInput
 
 
 class InputPanel(Frame):
@@ -20,7 +20,7 @@ class InputPanel(Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
 
-        self.textinput = Text(
+        self.textinput = MultilineTextInput(
             self,
             highlightthickness=0,
             insertwidth=1,
@@ -32,7 +32,7 @@ class InputPanel(Frame):
             pady=4,
         )
 
-        self.blank_img = tk.PhotoImage()
+        self.blank_img = PhotoImage()
         self.sendbtn = Button(
             self,
             image=self.blank_img,
@@ -53,12 +53,7 @@ class InputPanel(Frame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, minsize=self.sendbtn.winfo_width() + 40)
 
-        self.textinput.bind(
-            "<KeyRelease>",
-            lambda _: dynamic_text_height(self.textinput, 5),
-            "+",
-        )
-        self.sendbtn.bind("<FocusIn>", lambda _:self.textinput.focus_set(), "+")
+        self.sendbtn.bind("<FocusIn>", lambda _: self.textinput.focus_set(), "+")
 
         self.textinput.__theme_attrs__ = {
             "background": "surface",

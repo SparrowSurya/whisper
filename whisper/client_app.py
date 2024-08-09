@@ -74,7 +74,7 @@ class ClientApp(Client, Window):
         # to remove focus on username when somewhere else is clicked
         self.bind_all("<Button-1>", lambda event: event.widget.focus_set(), "+")
 
-        if self.is_custom_window:
+        if self.is_modified:
             # removes focus from custom titlebar buttons if exists
             self.titlebar.set_icon(DEFAULT_ICON_PATH)
             self.titlebar.minimize.bind("<FocusIn>", lambda _:self.focus_set(), "+")

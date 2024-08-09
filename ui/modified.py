@@ -2,13 +2,12 @@ import sys
 import tkinter as tk
 from typing import Callable, Tuple
 
-from whisper.settings import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, TITLEBAR_HEIGHT
 from .widgets import Frame
 from .grip import Grip
 from .titlebar import Titlebar
 
 
-class CustomWindowMixin:
+class ModifiedWindowMixin:
     """
     The class adds functionality to remove the default titlebar and
     other decoration on the tkinter window on supported platforms.
@@ -19,36 +18,36 @@ class CustomWindowMixin:
     """
 
     def __init__(self):
-        self.__is_custom_window = False
+        self.__is_modified = False
 
     @property
-    def is_custom_window(self) -> bool:
+    def is_modified(self) -> bool:
         """Informs if window has default decoration removed."""
-        return self.__is_custom_window
+        return self.__is_modified
 
-    def reset_plain(self):
-        """Resets the `is_custom_window`.
+    def undo_modification(self):
+        """Resets the `is_modified`.
 
         NOTE: This is intended to be used in rare cases only as this
-        does not reverse the changes done by `remove_default` method.
+        does not reverse the changes done by `modify_window` method.
         """
-        self.__is_custom_window = False
+        self.__is_modified = False
 
     if sys.platform == "win32":
 
-        def remove_default(self):
+        def modify_window(self):
             """Removes the default decoration of window on `win32`
             platform."""
-            if not self.is_custom_window:
+            if not self.is_modified:
                 self.overrideredirect(1)
                 self.update_idletasks()
                 self.withdraw()
                 self._configure_hwnd()
-                self.__is_custom_window = True
+                self.__is_modified = True
 
         def _configure_hwnd(self):
             """Confiures the HWND settings on `win32`."""
-            if not self.is_custom_window:
+            if not self.is_modified:
                 from ctypes import windll
 
                 GWL_EXSTYLE = -20
@@ -65,20 +64,20 @@ class CustomWindowMixin:
 
     else:
 
-        def remove_default(self):
+        def modify_window(self):
             """Unsupported platform. Raises `Exception`."""
-            self.__is_custom_window = False
+            self.__is_modified = False
             raise Exception("unable to customize")
 
 
-class TitlebarMixin(CustomWindowMixin):
+class TitlebarMixin(ModifiedWindowMixin):
     """
     The class provides a custom titlebar and other functionality of
     default window decoration.
 
     The class removes the default decoration during initilization and
     creates a custom titlebar with the features supported by the default
-    decorated window.
+    decorated window. This only occurs if window is modificable.
     """
 
     def __init__(self):
@@ -86,19 +85,19 @@ class TitlebarMixin(CustomWindowMixin):
         self.__maximized = False
         self.__geometry = []
         self.__fullscreen = False
-        self.__minsize = None
+        self.__minsize = [256, 52]
 
-        self.remove_default()
+        self.modify_window()
         self.setup_widgets()
 
-    def remove_default(self):
+    def modify_window(self):
         """Remove default decoration if supported."""
         try:
-            super().remove_default()
+            super().modify_window()
         except Exception:
             pass
         else:
-            self.bind("<Map>", lambda _: self.minimize_reverse())
+            self.bind("<Map>", lambda _: self.undo_minimize())
             self.title = self._title
 
     def setup_widgets(self):
@@ -110,7 +109,7 @@ class TitlebarMixin(CustomWindowMixin):
         NOTE: This should be called only once.
         """
         self.root = self.create_root()
-        if not self.is_custom_window:
+        if not self.is_modified:
             self.root.pack(fill="both", expand=1)
             return
 
@@ -203,7 +202,7 @@ class TitlebarMixin(CustomWindowMixin):
         self.state("iconic")
         self.reset_plain()
 
-    def minimize_reverse(self):
+    def undo_minimize(self):
         """Opposite of minize window."""
         self.overrideredirect(1)
         self.update_idletasks()
@@ -290,7 +289,7 @@ class TitlebarMixin(CustomWindowMixin):
     @property
     def minsize(self) -> Tuple[int, int]:
         """Minimum allowed width and height of the window."""
-        return self.__minsize or (MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+        return self.__minsize
 
     def set_minsize(self, min_w: int, min_h: int):
         """Set minimum width and height of the window."""
@@ -306,7 +305,7 @@ class TitlebarMixin(CustomWindowMixin):
     def on_close(self, callback: Callable[[], None]):
         """Callback when user clicks close button. Use this instead of
         `wm_protocol`."""
-        if self.is_custom_window:
+        if self.is_modified:
             self.titlebar.close.config(command=callback)
         else:
             self.wm_protocol("WM_DELETE_WINDOW", callback)
@@ -321,7 +320,7 @@ class TitlebarMixin(CustomWindowMixin):
         """Creates titlebar widget for the window."""
         if hasattr(self, "titlebar"):
             return self.titlebar
-        return Titlebar(parent or self, height=TITLEBAR_HEIGHT)
+        return Titlebar(parent or self, height=32)
 
     def enable_resize(self):
         """Bind the grip widgets to resize."""

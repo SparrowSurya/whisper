@@ -1,10 +1,8 @@
-from whisper.ui.widgets import Frame, Entry, Label
+from ui.widgets import Frame, Entry, Label
 
 
 class TopBar(Frame):
-    """
-    Chat topbar contaning info about chat.
-    """
+    """Chat topbar component."""
 
     __theme_attrs__ = {
         "background": "surfaceContainerLow",

@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from whisper.ui.widgets import ScrollableFrame
+from ui.widgets import ScrollableFrame
 from .message import Message
 from .info import Info
 

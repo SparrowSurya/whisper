@@ -2,7 +2,7 @@
 Contains the app related settings.
 """
 
-from whisper.ui.theme import Theme
+from ui.theme import Theme
 
 # client and server
 CHUNK_SIZE = 4096

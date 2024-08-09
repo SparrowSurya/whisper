@@ -1,5 +1,5 @@
 from whisper.core.chat import BaseChat
-from whisper.ui.widgets import Frame
+from ui.widgets import Frame
 from .topbar import TopBar
 from .view import View
 from .input_panel import InputPanel
@@ -35,7 +35,6 @@ class Chat(Frame, BaseChat):
         self.grid_columnconfigure(0, weight=1)
 
         self.input.sendbtn.config(command=self.send_message)
-        self.input.textinput.focus()
 
     def send_message(self, event=None):
         """Event listener to send message."""

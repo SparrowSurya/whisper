@@ -1,4 +1,4 @@
-from whisper.ui.widgets import Frame, Label
+from ui.widgets import Frame, Label
 
 
 class Message(Frame):

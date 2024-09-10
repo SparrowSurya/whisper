@@ -1,7 +1,6 @@
 import re
 import logging
 import argparse
-from enum import IntEnum
 
 
 class HostAction(argparse.Action):

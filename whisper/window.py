@@ -16,7 +16,7 @@ class Window(TkWindow):
     }
 
     def __init__(self, title: str, *args, **kwargs):
-        TkWindow.__init__(self, title, *args, **kwargs)
+        super().__init__(title, *args, **kwargs)
 
         self.bind(self.DESTORY_EVENT, self.destroy)
 

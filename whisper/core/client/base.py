@@ -49,8 +49,7 @@ class BaseClient:
     def connect(self,
         host: str,
         port: int,
-        loop:
-        asyncio.AbstractEventLoop | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ):
         """Connect to the server.
 

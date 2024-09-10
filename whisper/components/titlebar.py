@@ -3,10 +3,6 @@ from ui.titlebar import Titlebar as _Titlebar
 
 class Titlebar(_Titlebar):
 
-    def __init__(self, master, *args, height: int, **kwargs):
-        super().__init__(master, *args, height=height, **kwargs)
-        self.config_theme()
-
     def config_theme(self):
         """Configure the theme for titlebar."""
         self.icon.__theme_attrs__ = {

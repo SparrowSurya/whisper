@@ -1,16 +1,14 @@
 class BaseChat:
-    """Base chat class."""
+    """Basic interface to the chat room."""
 
-    def __init__(self, app):
-        """
-        Arguments:
-        * app - refers to the main application.
-        """
+    def __init__(self, id: str, app):
+        self.id = id
         self.app = app
 
-    def send_message(self, text: str):
-        """Message sent in the chat."""
-        self.app.send("message", text=text)
-
     def show_message(self, **kwargs):
-        """Message received from server."""
+        """Shows the message on the chat."""
+        # TODO - use logging t print messages
+
+    def send_message(self, **kwargs):
+        """Send the message."""
+        self.app.send_message(kwargs)

@@ -1,20 +1,30 @@
 import socket
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, Tuple, Any
+from typing import Dict, Any
+
+
+@dataclass(frozen=True, repr=False, order=True, slots=True)
+class Address:
+    """Tuple of host and port."""
+
+    host: str
+    port: int
+
+    def __repr__(self) -> str:
+        return f"<Address: ({self.host}, {self.port})>"
+
+    def __str__(self) -> str:
+        return f"{self.host}:{self.port}"
 
 
 @dataclass(repr=False, slots=True)
-class ConnectionHandle:
-    """
-    The class is a frozen dataclass which wraps the underlying objects
-    and data. The `data` is an dictionary attribute containing the
-    information related to connection.
-    """
+class ConnHandle:
+    """Client TCP connection handler object."""
 
     sock: socket.socket
     """Underlying socket object."""
 
-    address: Tuple[str, int]
+    address: Address
     """Address of the connection."""
 
     data: Dict[str, Any] = field(default_factory=dict)
@@ -45,22 +55,4 @@ class ConnectionHandle:
         return self.name
 
     def __repr__(self) -> str:
-        if self.username:
-            return f"<{type(self).__name__}: {self.address} as {self.username}>"
         return f"<{type(self).__name__}: {self.address}>"
-
-
-@dataclass(frozen=True, repr=False)
-class Response:
-    """A response data sent to recipients."""
-
-    content: Dict[str, Any]
-    """Resposns object."""
-
-    receivers: Iterable[ConnectionHandle]
-    """Response receivers."""
-
-    def __repr__(self) -> str:
-        return f"<Response: {self.content} to {self.receivers}>"
-
-    __str__ = __repr__

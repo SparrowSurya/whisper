@@ -1,137 +1,137 @@
+import json
 import asyncio
-import concurrent.futures
-from typing import Callable, List
+import logging
+from concurrent.futures import Future, InvalidStateError
+from typing import Callable, Coroutine, Dict, Any
 
-from .core.client import BaseClient
-from .core.streamcodec import StreamEncoder, StreamDecoder
-from .core.event_thread import EventThread
-from .core.logger import logger
-from .settings import CHUNK_SIZE, ENCODING
+from .core.packet import Packet, PacketV1, PacketKind
+from .core.client import BaseClient, ClientConn
+from .utils.decorators import aworker
+from .settings import Settings
 
 
-class Client(EventThread, BaseClient):
-    """The class provides the client backend functions."""
+logger = logging.getLogger(__name__)
 
-    def __init__(self,
-        host: str,
-        port: int,
-        username: str,
-        chunk_size: str = CHUNK_SIZE,
-        encoding: str = ENCODING,
-        **kwargs,
-    ):
+
+class Client(BaseClient):
+    """
+    Client backend controls and manages the connection being used for
+    multiple purposes.
+    """
+
+    def __init__(self, conn: ClientConn | None = None):
         """
-        Arguments:
-        * host - server host address.
-        * port - server port address.
-        * username - client username.
-        * chunk_size - amount to data read at once,
-        * encoding - encoding for object serialization.
+        The connection object is used to connect with remote server.
+        Same is used for multiple chats and servers on the client side.
         """
-        BaseClient.__init__(self, None)
-        EventThread.__init__(self)
-        self.host = host
-        self.port = port
-        self.username = username
-        self.encoding =encoding
-        self.chunk_size = chunk_size
+        BaseClient.__init__(self, conn)
+        self.stop_fut: Future[None] = Future()
+        self.setting = Settings.default()
+        self.tasks: Dict[str, Coroutine[Any, Any, Any]] = {}
 
-        self.response = {
-            "message": self.show_message,
-            "set-username": self.update_username,
-            "exit": self.server_exit,
-            "chat-info": self.update_chat_info,
-            "user-rename": self.user_renamed,
-            "user-join": self.user_joined,
-            "user-exit": self.user_exited,
-        }
-        self.others = []
+    def cfg(self, key: str) -> Any:
+        """Get current configuration."""
+        return self.setting.get(key)
 
-    def send(self,
-        kind: str,
-        on_done: Callable[[concurrent.futures.Future[None]], None] | None = None,
-        **kwargs,
-    ):
-        """Send serialised message to the server."""
-        kwargs["kind"] = kind
-        logger.debug(f"Sending {kwargs}")
-        encoder = StreamEncoder(**kwargs)
-        data = encoder.encode(self.encoding)
-        self.schedule(self.write(data), on_done)
+    def serialize(self, data: Dict[str, Any], enc: str) -> bytes:
+        """Serialize the dict object into stream of bytes."""
+        return json.dumps(data).encode(encoding="UTF-8")
 
-    async def listen(self):
-        """Listen incoming data from server."""
-        logger.info("Started listening data")
-        decoder = StreamDecoder()
+    def deserialize(self, data: bytes, enc: str) -> Dict[str, Any]:
+        """Deserialize the stream of bytes into dict object."""
+        return json.loads(data.decode(encoding="UTF-8"))
+
+    def send_packet(self,
+        packet: Packet,
+        callback: Callable[[Future[None]], None] | None = None,
+    ) -> Future[None]:
+        """Schedule the packet to be sent to server.
+        Callback is invoked after the task finishes."""
+        return self.schedule(self.sendq.put(packet), callback)
+
+    @aworker("PacketRecvQueue", logger=logger)
+    async def alisten(self):
+        """Listens the incoming messages to the queue."""
+        while True:
+            packet = await self.recvq.get()
+            data = self.decode(packet.data, str(packet.enc))
+
+    def stop(self):
+        """Stops the scheduled/running tasks."""
         try:
-            while self.is_connected:
-                data = await self.read(self.chunk_size)
-                if data == b"":
-                    logger.info("Received b''")
-                    break
-                if response := decoder.decode(data):
-                    self.recv(**response)
-        except asyncio.CancelledError:
-            pass
-        except ConnectionAbortedError:
-            pass
-        except Exception:
-            logger.exception("Caught error while listening data")
-        finally:
-            logger.info("Stopped listening data")
+            self.stop_fut.set_result(None)
+        except InvalidStateError as error:
+            logger.exception(f"Caught exception: {error}")
 
-    def recv(self, **kwargs: object):
-        """Reads message and performs action/updation."""
-        logger.debug(f"Received {kwargs}")
-        kind = kwargs.pop("kind", None)
-        if func := self.response.get(kind, None):
-            func(**kwargs)
-        else:
-            logger.warning(f"Unknows `{kind}` response from server, kwargs: {kwargs}")
+    def schedule(
+        self,
+        task: Coroutine[Any, Any, None],
+        on_done: Callable[[Future[None]], None] | None = None,
+    ) -> Future:
+        """
+        Schedules a task.
+        `on_done` is called when the task is complete.
+        """
+        fut = asyncio.run_coroutine_threadsafe(task, self.loop)
+        if on_done is not None:
+            fut.add_done_callback(on_done)
+        return fut
 
-    async def init_main(self):
-        self.connect(
-            host=self.host,
-            port=self.port,
-            loop=self.loop,
-        )
-        await EventThread.init_main(self)
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """Asyncio running eventloop."""
+        return asyncio.get_running_loop()
 
-    def init_coro(self):
-        EventThread.init_coro(self)
-        self.schedule(self.listen())
-        self.send("hello", name=self.username)
-
-    async def exit_main(self):
+    async def main(self):
+        """
+        The main entry point for coroutines execution.
+        This is used by `run` method to execute coroutines.
+        """
+        self.connect(self.cfg("host"), self.cfg("port"))
+        self.schedule_workers()
+        await asyncio.wrap_future(self.stop_fut)  # blocks until stop() is called
+        self.cancel_workers()
         self.disconnect()
-        await EventThread.exit_main(self)
 
-    def update_username(self, name: str, **kwargs):
-        """Response for `set-username`. Updates username."""
-        self.username = name
+    def schedule_workers(self):
+        """Schedule the workers and tasks. It is called after the connection
+        is established."""
+        self.schedule(self.alisten())
+        self.schedule(self.arecv(self.reader))
+        self.schedule(self.asend(self.writer))
+        # self.send_init_packet()
 
-    def show_message(self, user: str | None, text: str):
-        """Response for `message`. Does nothing!"""
+    def cancel_workers(self):
+        """Stop all the running workers."""
+        for task in asyncio.all_tasks():
+            task.cancel()
 
-    def server_exit(self, reason: str = "", **kwargs):
-        """Response `exit` from server. Server is closing due to some reason."""
-        if reason:
-            logger.info(f"Server closing due to {reason}")
-        self.stop()
+    # TODO; handle return on disconnect
+    # returns b"" when connection is closed by server
+    # TODO: fails when returns b"" causes the calle to raise error
+    async def reader(self, n: int) -> bytes:
+        """Reads n bytes from connection."""
+        return await self.aread(n, self.loop)
 
-    def update_chat_info(self, users: List[str], **kwargs):
-        """Response `chat-info` from server. Information about the chat."""
-        self.others = users
+    async def writer(self, d: bytes) -> None:
+        """Writes data to connection."""
+        return await self.awrite(d, self.loop)
 
-    def user_joined(self, user: str, **kwargs):
-        """Response `user-join` from server. Updates the users list."""
-        self.others.append(user)
+    # def send_init_packet(self):
+    #     """Send the init packet."""
+    #     data = self.encode({
+    #         "username": self.cfg("username"),
+    #     })
+    #     packet = PacketV1(
+    #         type=PacketKind.INIT,
+    #         data=data,
+    #     )
+    #     self.send_packet(packet)
 
-    def user_exited(self, user: str, reason: str = "", **kwargs):
-        """Response `user-exit` from server. Updates users list."""
-        self.others.remove(user)
-
-    def user_renamed(self, old: str, new: str, **kwargs):
-        """Response `user-rename` from server. Updates user in users list."""
-        self.others.remove(old)
-        self.others.append(new)
+    # def send_exit_packet(self):
+    #     """Send the exit packet."""
+    #     packet = PacketV1(
+    #         type=PacketKind.EXIT,
+    #         data=b"",
+    #     )
+    #     self.send_packet(packet)

@@ -1,62 +1,71 @@
-import tkinter as tk
-from typing import Any, Self
+import asyncio
+import logging
+import threading
+from typing import Self
 
-from ui.window import TkWindow
-from ui.messagebox import ShowInfo, ShowWarning, ShowError
-
-from whisper.settings import TITLEBAR_HEIGHT, MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
-from whisper.utils.binding import Binding
-from whisper.components.titlebar import Titlebar
-from whisper.components.root import Root
+from whisper.core.client import ClientConn
+from .ui import MainWindow
+from .client import Client
 
 
-class MainApplication(TkWindow):
-    """
-    Main application.
-    """
+logger = logging.getLogger(__name__)
 
-    DESTROY_EVENT = "<<MainWindowDestroy>>"
 
-    def __init__(self, title: str):
-        super().__init__(title=title)
-        self.destroy_bind = Binding(self, self.DESTROY_EVENT, self.destroy, bind=True)
+class Application(Client, MainWindow):
+    """Main application."""
 
-        if self.is_modified:
-            self.titlebar.config_theme()
-            self.set_minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+    def __init__(self, conn: ClientConn | None = None):
+        Client.__init__(self, conn)
+        MainWindow.__init__(self)
+        self.setup()
+        self.thread = threading.Thread(target=self.run, name="BackendThread")
+
+    def setup(self):
+        """Configure all the setup."""
+        self.on_window_exit(self.shutdown)
+        self.setup_root()
 
     @property
     def app(self) -> Self:
+        """Self refrence."""
         return self
 
-    def destroy(self, event: Any = None):
-        """Destroy the window."""
-        super().destroy()
-
     def mainloop(self):
-        """TKinter mainloop."""
-        super().mainloop()
+        """Run the application. This should be running in main thread."""
+        logger.debug("Application running")
+        try:
+            MainWindow.mainloop(self)
+        except KeyboardInterrupt:
+            logger.debug("Caught KeyboardInterrput")
+        except Exception as error:
+            logger.exception(f"An exception occured: {error}")
+        finally:
+            self.shutdown()
+            logger.debug("Application exited")
 
-    def create_root(self, parent: tk.Misc | None = None) -> Root:
-        """Root widget of the application."""
-        if hasattr(self, "root"):
-            return self.root
-        return Root(parent or self)
+    def run(self):
+        """Run the client backend. This should be running in a seperate
+        thread. Do not call this method directly."""
+        try:
+            asyncio.run(self.main())
+        except BaseException as error:
+            logger.exception(f"An exception occured: {error}")
+            self.shutdown()
 
-    def create_titlebar(self, parent: tk.Misc | None = None) -> Titlebar:
-        """Titlebar of the application (only for modified window)."""
-        if hasattr(self, "titlebar"):
-            return self.titlebar
-        return Titlebar(parent or self, height=TITLEBAR_HEIGHT)
+    def run_thread(self):
+        """Invoke the client backend."""
+        if not self.thread.is_alive():
+            logger.debug(f"{self.thread.name} started")
+            self.thread.start()
+        else:
+            logger.warning(f"Attempted to run {self.thread.name} twice")
 
-    def info_dialog(self, title: str, msg: str) -> ShowInfo:
-        """Display information dialog."""
-        return ShowInfo(self, title, msg)
-
-    def warning_dialog(self, title: str, msg: str) -> ShowWarning:
-        """Display warning dialog."""
-        return ShowWarning(self, title, msg)
-
-    def error_dialog(self, title: str, msg: str) -> ShowError:
-        """Display error dialog."""
-        return ShowError(self, title, msg)
+    def shutdown(self):
+        """Close application. Safely handles running thread."""
+        logger.debug("Shutting down application")
+        if self.thread.is_alive():
+            self.stop()
+            logger.debug(f"Waiting thread join: {self.thread.name}")
+            self.thread.join()
+            logger.debug(f"Thread finished: {self.thread.name}")
+        MainWindow.quit(self)

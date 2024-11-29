@@ -1,26 +1,17 @@
 import socket
 import asyncio
-from typing import Tuple
+from typing import Tuple, Awaitable
 
 
-# TODO
-# reconnect
-# read/write fails
-# using ssl
-class ClientConnection:
+class ClientConn:
     """
-    The class provides the connection management for client. It provides
-    asynchronous methods for reading and writing to socket object.
-
-    The class makes use of `asyncio` event loop for asynchronous tasks.
+    A TCP client connection. It works with the async event loop for
+    reading and writing data on the connection.
     """
-
-    __slots__ = ("sock", "__connected")
 
     def __init__(self):
         """
-        Initialises the underlying TCP socket for the client. The socket
-        is set to non-blocking.
+        Initialize the underlying socket object with non-blocking mode.
         """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(False)
@@ -33,19 +24,20 @@ class ClientConnection:
         NOTE - Must make sure that connection is established.
 
         Raises:
-        * OSError - if client is not connected (some platforms).
+        * OSError - if client is not connected (on some platforms).
         """
         return self.sock.getsockname()
 
     @property
     def is_connected(self) -> bool:
         """Check is client is connected."""
-        # This doen not ensure that underlying connection is still alive
+        # NOTE
+        # This does not ensure that underlying connection is still alive
         # and can send or receive data
         return self.__connected
 
     def connect(self, host: str, port: int):
-        """Connect to server.
+        """Establishes connection with server.
 
         Arguments:
         * host - server hostname/ip address.
@@ -58,6 +50,7 @@ class ClientConnection:
         if self.is_connected:
             raise RuntimeError("Connection already established")
 
+        # NOTE
         # connect needs to be waited to complete the operation otherwise
         # BlockingIOError: [Errno 115] Operation now in progress
         self.sock.setblocking(True)
@@ -66,7 +59,7 @@ class ClientConnection:
         self.__connected = True
 
     def disconnect(self):
-        """Close the connection.
+        """Close the connection with server.
 
         Raises:
         * RuntimeError - client is not connected.
@@ -77,10 +70,16 @@ class ClientConnection:
         self.sock.close()
         self.__connected = False
 
-    async def read(self, n: int, loop: asyncio.AbstractEventLoop):
-        """Read n bytes of data from connection."""
+    async def read(self,
+        n: int,
+        loop: asyncio.AbstractEventLoop,
+    ) -> bytes:
+        """Read `n` bytes of data from server."""
         return await loop.sock_recv(self.sock, n)
 
-    async def write(self, data: bytes, loop: asyncio.AbstractEventLoop):
-        """Write data to the connection."""
+    async def write(self,
+        data: bytes,
+        loop: asyncio.AbstractEventLoop,
+    ) -> None:
+        """Write data to the server."""
         return await loop.sock_sendall(self.sock, data)

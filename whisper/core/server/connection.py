@@ -1,18 +1,13 @@
 import socket
 import asyncio
-from typing import Any, Coroutine, Tuple
+from typing import Awaitable, Tuple
 
 
-class ServerConnection:
+class ServerConn:
     """
-    The class provides connection management for the server. It provides
-    asynchronous functions for listening incoming connections, reading
-    incoming data and writing outgoing data.
-
-    The class makse use of `asyncio` event loop for asynchronous tasks.
+    A TCP server connection. It works with the async event loop for
+    reading and writing data on the connection and listening connection.
     """
-
-    __slots__ = ("sock", "__serving")
 
     def __init__(self):
         """
@@ -24,7 +19,6 @@ class ServerConnection:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.__serving = False
 
-    @property
     def address(self) -> Tuple[str, int]:
         """Server host address as tuple of hostname and port address.
 
@@ -75,11 +69,11 @@ class ServerConnection:
     async def accept(
         self,
         loop: asyncio.AbstractEventLoop,
-    ) -> Coroutine[Any, Any, Tuple[socket.socket, Tuple[str, int]]]:
+    ) -> Tuple[socket.socket, Tuple[str, int]]:
         """
         Accept incoming connection.
 
-        Returns:
+        Returns
         * connection socket.
         * tuple of connection address as hostname and port address.
         """
@@ -90,7 +84,7 @@ class ServerConnection:
         sock: socket.socket,
         n: int,
         loop: asyncio.AbstractEventLoop,
-    ) -> Coroutine[Any, Any, bytes]:
+    ) -> bytes:
         """Reads n bytes from socket."""
         return await loop.sock_recv(sock, n)  # type: ignore
 
@@ -99,6 +93,6 @@ class ServerConnection:
         sock: socket.socket,
         data: bytes,
         loop: asyncio.AbstractEventLoop,
-    ):
+    ) -> None:
         """Write data to the socket."""
-        return await loop.sock_sendall(sock, data)
+        return await loop.sock_sendall(sock, data) # type: ignore

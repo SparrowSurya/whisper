@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable, Tuple
+from typing import Awaitable, Callable, NoReturn, Tuple
 
 from whisper.core.packet import Packet
 from whisper.utils.decorators import aworker
@@ -58,16 +58,20 @@ class BaseClient:
         self.connection.disconnect()
         logger.info("Client connection closed")
 
-    @aworker("PacketReader", logger=logger)
-    async def arecv(self, reader: Callable[[int], Awaitable[bytes]]):
+    @aworker("PacketReader", logger=logger) # type: ignore
+    async def arecv(self,
+        reader: Callable[[int], Awaitable[bytes]],
+    ) -> NoReturn:
         """Coroutine reading incoming packets from the server."""
         while True:
             packet = await Packet.from_stream(reader)
             await self.recvq.put(packet)
             logger.debug(f"Received: {packet!r}")
 
-    @aworker("PacketWriter", logger=logger)
-    async def asend(self, writer: Callable[[bytes], Awaitable[None]]):
+    @aworker("PacketWriter", logger=logger) # type: ignore
+    async def asend(self,
+        writer: Callable[[bytes], Awaitable[None]],
+    ) -> NoReturn:
         """Coroutine writing packets to the server."""
         while True:
             packet = await self.sendq.get()

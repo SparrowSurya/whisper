@@ -1,6 +1,6 @@
 import socket
 import asyncio
-from typing import Tuple, Awaitable
+from typing import Tuple
 
 
 class ClientConn:

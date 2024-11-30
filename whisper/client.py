@@ -2,9 +2,9 @@ import json
 import asyncio
 import logging
 from concurrent.futures import Future, InvalidStateError
-from typing import Callable, Coroutine, Dict, Any
+from typing import Callable, Coroutine, List, Dict, Any, NoReturn
 
-from .core.packet import Packet, PacketV1, PacketKind
+from .core.packet import Packet
 from .core.client import BaseClient, ClientConn
 from .utils.decorators import aworker
 from .settings import Settings
@@ -27,17 +27,17 @@ class Client(BaseClient):
         BaseClient.__init__(self, conn)
         self.stop_fut: Future[None] = Future()
         self.setting = Settings.default()
-        self.tasks: Dict[str, Coroutine[Any, Any, Any]] = {}
+        self.tasks: List[Future[NoReturn]] = []
 
     def cfg(self, key: str) -> Any:
         """Get current configuration."""
         return self.setting.get(key)
 
-    def serialize(self, data: Dict[str, Any], enc: str) -> bytes:
+    def serialize(self, data: Dict[str, Any]) -> bytes:
         """Serialize the dict object into stream of bytes."""
         return json.dumps(data).encode(encoding="UTF-8")
 
-    def deserialize(self, data: bytes, enc: str) -> Dict[str, Any]:
+    def deserialize(self, data: bytes) -> Dict[str, Any]:
         """Deserialize the stream of bytes into dict object."""
         return json.loads(data.decode(encoding="UTF-8"))
 
@@ -49,12 +49,13 @@ class Client(BaseClient):
         Callback is invoked after the task finishes."""
         return self.schedule(self.sendq.put(packet), callback)
 
-    @aworker("PacketRecvQueue", logger=logger)
-    async def alisten(self):
+    @aworker("PacketRecvQueue", logger=logger) # type: ignore
+    async def alisten(self) -> NoReturn:
         """Listens the incoming messages to the queue."""
         while True:
             packet = await self.recvq.get()
-            data = self.decode(packet.data, str(packet.enc))
+            self.deserialize(packet.get_data())
+            # TODO: what to od with data?
 
     def stop(self):
         """Stops the scheduled/running tasks."""
@@ -96,15 +97,18 @@ class Client(BaseClient):
     def schedule_workers(self):
         """Schedule the workers and tasks. It is called after the connection
         is established."""
-        self.schedule(self.alisten())
-        self.schedule(self.arecv(self.reader))
-        self.schedule(self.asend(self.writer))
+        self.tasks += [
+            self.schedule(self.alisten()),
+            self.schedule(self.arecv(self.reader)),
+            self.schedule(self.asend(self.writer)),
+        ]
         # self.send_init_packet()
 
     def cancel_workers(self):
         """Stop all the running workers."""
-        for task in asyncio.all_tasks():
+        for task in self.tasks:
             task.cancel()
+        self.tasks.clear()
 
     # TODO; handle return on disconnect
     # returns b"" when connection is closed by server

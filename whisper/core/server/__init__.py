@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import socket
-from typing import Awaitable
+
 
 from .connection import ServerConn
 from .handle import ConnHandle, Address  # noqa: F401

@@ -22,7 +22,7 @@ class Packet(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def get_version(self) -> int:
+    def get_version(cls) -> int:
         """Packet version."""
 
     @classmethod
@@ -44,8 +44,9 @@ class Packet(abc.ABC):
         """
         return struct.pack("B", self.get_version())
 
-    def __repr__(self):
-        return f"<Packet-v{self.VERSION}: {self.kind!s}>"
+    @abc.abstractmethod
+    def get_data(self) -> bytes:
+        """Data carried by the packet."""
 
 
 class PacketRegistery:
@@ -54,7 +55,7 @@ class PacketRegistery:
     _handlers: Dict[int, Type[Packet]] = {}
 
     @staticmethod
-    def register(cls: Type[Packet]) -> Type[Packet]:
+    def register(handler: Type[Packet]) -> Type[Packet]:
         """Decorator to register a packet.
 
         Usage:
@@ -62,20 +63,20 @@ class PacketRegistery:
         >>> class PacketV1(Packet):
         >>>     ...
         """
-        if not issubclass(cls, Packet):
-            msg = f"{cls!s} must be subclass of `Packet`"
+        if not issubclass(handler, Packet):
+            msg = f"{handler!s} must be subclass of `Packet`"
             logger.error(msg)
             raise ValueError(msg)
 
-        cls_version = cls.get_version()
-        if cls_version in PacketRegistery._handlers:
-            msg = f"Packet v{cls_version} is registered"
+        version = handler.get_version()
+        if version in PacketRegistery._handlers:
+            msg = f"Packet v{version} is registered"
             logger.error(msg)
             raise TypeError(msg)
 
-        PacketRegistery._handlers[cls_version] = cls
-        logger.debug(f"Packet v{cls_version} registered")
-        return cls
+        PacketRegistery._handlers[version] = handler
+        logger.debug(f"Packet v{version} registered")
+        return handler
 
     @classmethod
     def get(cls, version: int) -> Type[Packet]:
@@ -140,6 +141,10 @@ class PacketV1(Packet):
         self.kind = kind
         self.data = data
 
+    def get_data(self) -> bytes:
+        """The data carried by the packet."""
+        return self.data
+
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
         """Read packet from the stream."""
@@ -175,3 +180,6 @@ class PacketV1(Packet):
             and self.kind == other.kind
             and self.data == other.data
         )
+
+    def __repr__(self):
+        return f"<Packet-v{self.get_version()}: {self.kind!s}>"

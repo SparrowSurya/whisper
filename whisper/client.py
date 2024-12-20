@@ -2,9 +2,9 @@ import json
 import asyncio
 import logging
 from concurrent.futures import Future, InvalidStateError
-from typing import Callable, Coroutine, List, Dict, Any, NoReturn
+from typing import Callable, Coroutine, List, Any, NoReturn
 
-from .core.packet import Packet
+from .core.packet import deserialize, Packet
 from .core.client import BaseClient, ClientConn
 from .utils.decorators import aworker
 from .settings import Settings
@@ -33,14 +33,6 @@ class Client(BaseClient):
         """Get current configuration."""
         return self.setting.get(key)
 
-    def serialize(self, data: Dict[str, Any]) -> bytes:
-        """Serialize the dict object into stream of bytes."""
-        return json.dumps(data).encode(encoding="UTF-8")
-
-    def deserialize(self, data: bytes) -> Dict[str, Any]:
-        """Deserialize the stream of bytes into dict object."""
-        return json.loads(data.decode(encoding="UTF-8"))
-
     def send_packet(self,
         packet: Packet,
         callback: Callable[[Future[None]], None] | None = None,
@@ -54,7 +46,7 @@ class Client(BaseClient):
         """Listens the incoming messages to the queue."""
         while True:
             packet = await self.recvq.get()
-            self.deserialize(packet.get_data())
+            deserialize(packet.get_data())
             # TODO: what to od with data?
 
     def stop(self):

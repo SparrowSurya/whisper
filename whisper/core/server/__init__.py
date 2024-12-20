@@ -27,7 +27,7 @@ class BaseServer:
     async def accept(self, loop: asyncio.AbstractEventLoop) -> ConnHandle:
         """Accept incoming client connections."""
         sock, address = await self.connection.accept(loop)
-        logger.debug(f"New client: {address}")
+        logger.debug(f"New connection: {address}")
         return ConnHandle(sock, Address(*address))
 
     async def aread(self,
@@ -49,7 +49,7 @@ class BaseServer:
     def close(self, conn: ConnHandle):
         """Close the connection."""
         conn.sock.close()
-        logger.debug(f"Closed tcp connection: {conn.address}")
+        logger.debug(f"Closed connection: {conn.address}")
 
     @property
     def is_serving(self) -> bool:

@@ -1,56 +1,51 @@
+"""
+This module provides connection object for client.
+"""
+
 import socket
 import asyncio
-from typing import Tuple, Awaitable
+import logging
+from typing import Tuple
+
+
+logger = logging.getLogger(__name__)
 
 
 class ClientConn:
     """
-    A TCP client connection. It works with the async event loop for
-    reading and writing data on the connection.
+    A TCP oriented asynchronous client connection. It uses `asyncio`
+    event loop to performs read and write operations on socket.
     """
 
     def __init__(self):
-        """
-        Initialize the underlying socket object with non-blocking mode.
-        """
+        """Initialize TCP socket."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.__connected = False
 
     def address(self) -> Tuple[str, int]:
-        """Client address as tuple of hostname and port address.
-
-        NOTE - Must make sure that connection is established.
-
-        Raises:
-        * OSError - if client is not connected (on some platforms).
+        """
+        Provides client address as tuple of hostname and port address.
+        Make sure that client is connected before calling it.
         """
         return self.sock.getsockname()
 
     @property
     def is_connected(self) -> bool:
-        """Check is client is connected."""
-        # NOTE
-        # This does not ensure that underlying connection is still alive
-        # and can send or receive data
+        """Check if client is connected.
+
+        NOTE: This do not ensures that underlying connection is alive.
+        """
         return self.__connected
 
     def connect(self, host: str, port: int):
-        """Establishes connection with server.
-
-        Arguments:
-        * host - server hostname/ip address.
-        * port - server port address.
-
-        Raises:
-        * RuntimeError - if client is already connected.
-        * ConnectionRefusedError - if unable to connect.
-        """
+        """Establish connection with server."""
         if self.is_connected:
-            raise RuntimeError("Connection already established")
+            msg = "Connection is already established!"
+            logger.error(msg)
+            raise RuntimeError(msg)
 
-        # NOTE
         # connect needs to be waited to complete the operation otherwise
         # BlockingIOError: [Errno 115] Operation now in progress
         self.sock.setblocking(True)
@@ -59,13 +54,11 @@ class ClientConn:
         self.__connected = True
 
     def disconnect(self):
-        """Close the connection with server.
-
-        Raises:
-        * RuntimeError - client is not connected.
-        """
+        """Close the connection with server."""
         if not self.is_connected:
-            raise RuntimeError("Connection already established")
+            msg = "Connection is not established!"
+            logger.error(msg)
+            raise RuntimeError(msg)
 
         self.sock.close()
         self.__connected = False

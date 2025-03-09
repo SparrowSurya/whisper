@@ -1,3 +1,7 @@
+"""
+This module provides decorator for backend asyncio workers.
+"""
+
 import asyncio
 import logging
 from typing import Any, Coroutine

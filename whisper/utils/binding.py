@@ -1,3 +1,7 @@
+"""
+This module provides the event binding object for frontend.
+"""
+
 import logging
 import tkinter as tk
 from typing import Callable, Any
@@ -9,9 +13,8 @@ logger = logging.getLogger(__name__)
 NO_DATA = object()
 
 
-# TODO - redo this as frozen dataclass
 class Binding:
-    """A bind object manages a widget's single binding."""
+    """A bind object manages tkinter widget's event binding."""
 
     def __init__(self,
         widget: tk.Widget,
@@ -19,7 +22,6 @@ class Binding:
         callback: Callable[[tk.Event | None, Any | object], None],
         *,
         data: Any = NO_DATA,
-        bind: bool = True, # TODO - remove this
     ):
         """
         Arguements:
@@ -34,33 +36,21 @@ class Binding:
         self.cb = callback
         self.data = data
         self._id = None
+        self.bind()
 
-        if bind:
-            self.bind()
-
-    # TODO - make this implicit during initilization
     def bind(self):
         """Binds the sequence to the widget."""
         if self._id is None:
             self._id = self.widget.bind(self.seq, self.callback, "+")
             logger.debug(f"Binded {self.seq} to {self.cb.__name__}")
         else:
-            logger.debug(f"{self.widget} is already binded on {self.seq}")
+            logger.warning(f"{self.widget} is already binded on {self.seq}")
 
-    # TODO - remove this
     def unbind(self):
         """Unbind the widget with sequence."""
         if self._id is not None:
             self.widget.unbind(self.seq, self._id)
             self._id = None
-
-    # TODO - remove this
-    def rebind(self, sequence: str = "", callback: Callable[[tk.Event | None, Any | object], None] | None = None):
-        """Bind the widget again."""
-        self.unbind()
-        self.seq = sequence or self.seq
-        self.cb = callback or self.cb
-        self.bind()
 
     def callback(self, event: tk.Event | None = None):
         """Configured callback."""
@@ -73,4 +63,9 @@ class Binding:
         try:
             self.cb(event, self.data)
         except tk.TclError:
-            logger.exception(f"Failed to call {self.cb.__name__} for {self.widget} on {self.seq}")
+            msg = f"Failed to call {self.cb.__name__} for {self.widget} on {self.seq}"
+            logger.exception(msg)
+
+    def __del__(self):
+        """Cleanup the binding."""
+        self.unbind()

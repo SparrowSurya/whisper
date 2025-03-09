@@ -31,7 +31,7 @@ class TestBasePacket(unittest.IsolatedAsyncioTestCase):
     class PacketV0(Packet):
 
         @classmethod
-        def get_version(self):
+        def get_version(cls):
             return 0
 
         @classmethod
@@ -41,6 +41,9 @@ class TestBasePacket(unittest.IsolatedAsyncioTestCase):
 
         def to_stream(self):
             return super().to_stream()
+
+        def get_data(self) -> bytes:
+            return b""
 
     def get_packet_cls(self):
         return self.PacketV0

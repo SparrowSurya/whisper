@@ -3,14 +3,17 @@ This modules provies the packet used for communication to the server.
 """
 
 import abc
+import json
 import struct
 import logging
 from enum import IntEnum
 from functools import cached_property
-from typing import Awaitable, Callable, Type, Tuple, Dict
+from typing import Awaitable, Callable, Type, Tuple, Dict, Any
 
 
 __all__ = (
+    "serialize",
+    "deserialize",
     "PacketKind",
     "Packet",
     "PacketRegistery",
@@ -19,6 +22,15 @@ __all__ = (
 
 
 logger = logging.getLogger(__name__)
+
+
+def serialize(data: Dict[str, Any]) -> bytes:
+    """Serialize the dict object into stream of bytes."""
+    return json.dumps(data).encode(encoding="UTF-8")
+
+def deserialize(data: bytes) -> Dict[str, Any]:
+    """Deserialize the stream of bytes into dict object."""
+    return json.loads(data.decode(encoding="UTF-8"))
 
 
 class Packet(abc.ABC):
@@ -164,6 +176,10 @@ class PacketV1(Packet):
         """
         self.kind = kind
         self.data = data
+
+    def get_data(self) -> bytes:
+        """The data carried by the packet."""
+        return self.data
 
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):

@@ -1,15 +1,15 @@
+"""
+This module manages the logging part of the app.
+"""
+
 import sys
 import logging
-from pathlib import Path
 
 
-default_fmt = logging.Formatter("%(levelname)-8s %(threadName)-15s %(name)-21s: %(message)s")
-log_file = str(Path("logs", "whisper.log"))
-
+default_fmt = logging.Formatter(
+    fmt="{levelname:<8} {threadName:<15} {name:<21}: {message}",
+    style="{",
+)
 stream_handler = logging.StreamHandler(stream=sys.stdout)
 stream_handler.setFormatter(default_fmt)
 stream_handler.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler(log_file)
-file_handler.setFormatter(default_fmt)
-file_handler.setLevel(logging.DEBUG)

@@ -1,3 +1,7 @@
+"""
+This module contains the customised version of tkinter widget.
+"""
+
 import tkinter as tk
 
 

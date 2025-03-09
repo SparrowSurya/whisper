@@ -1,3 +1,8 @@
+"""
+This module provides a handler object to manage connection and related
+data.
+"""
+
 import socket
 from dataclasses import dataclass, field
 from typing import Dict, Any

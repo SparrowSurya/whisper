@@ -1,3 +1,8 @@
+"""
+This module provides a response object for sending packet to multiple
+connections.
+"""
+
 from dataclasses import dataclass
 from typing import Iterable
 

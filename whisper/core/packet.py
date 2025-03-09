@@ -1,7 +1,12 @@
+"""
+This modules provies the packet used for communication to the server.
+"""
+
 import abc
 import struct
 import logging
-from enum import IntEnum, auto
+from enum import IntEnum
+from functools import cached_property
 from typing import Awaitable, Callable, Type, Tuple, Dict
 
 
@@ -17,68 +22,87 @@ logger = logging.getLogger(__name__)
 
 
 class Packet(abc.ABC):
-    """Base Packet class. Child class must inherit the class for sending
-    data across the stream."""
+    """
+    Abstract Packet class. It handles the packet being created from
+    stream of bytes and the required packet version. Implement this
+    to customise the packet structure.
+    """
 
     @classmethod
     @abc.abstractmethod
-    def get_version(self) -> int:
+    def get_version(cls) -> int:
         """Packet version."""
 
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
-        """Read (async) the packet from stream.
-        
-        NOTE: Make sure that reader do not provides empty bytes.
+        """
+        Creates the packet from asynchronous stream of bytes. It reads
+        the first byte from stream to know the packet version then call
+        to respective packet's classmethod is made to further read the
+        bytes to parse the data as per their format.
+
+        NOTE:
+        1. Make sure that reader do not provides empty bytes.
+        2. Packet version must be registered in `PacketRegistery`.
         """
         version = struct.unpack("B", await reader(1))[0]
-        handler_cls = PacketRegistery.get(version)
+        handler_cls = PacketRegistery.get_handler(version)
         return await handler_cls.from_stream(reader)
 
     @abc.abstractmethod
     def to_stream(self) -> bytes:
-        """Convert the packet into bytes.
+        """Converts the packet into stream of bytes.
 
-        NOTE: This part should be placed at the beginning by the child
-        class. This is for automatic detection of correct packet version.
+        NOTE: This data must be placed before the data being sent by
+        the packet itself.
         """
         return struct.pack("B", self.get_version())
 
     def __repr__(self):
-        return f"<Packet-v{self.VERSION}: {self.kind!s}>"
+        """Simple packet representation."""
+        return f"<Packet-v{self.get_version()}>"
 
 
 class PacketRegistery:
-    """Manages the packet versions."""
+    """
+    Manages the packet versions and their respective handlers.
+
+    NOTE: Usethis directly instead creating an instance.
+    """
 
     _handlers: Dict[int, Type[Packet]] = {}
+    """Maps version against their handlers."""
 
     @staticmethod
-    def register(cls: Type[Packet]) -> Type[Packet]:
-        """Decorator to register a packet.
+    def register(handler: Type[Packet]) -> Type[Packet]:
+        """
+        Use this as decorator to register a packet. Since single byte
+        is used to store the packet version it cannot exceed `255` and
+        `0` is not allowed as version.
 
         Usage:
         >>> @PacketRegistery.register
         >>> class PacketV1(Packet):
         >>>     ...
         """
-        if not issubclass(cls, Packet):
-            msg = f"{cls!s} must be subclass of `Packet`"
-            logger.error(msg)
-            raise ValueError(msg)
+        assert not issubclass(handler, Packet), (
+            f"{handler.__name__} must be subclass of `Packet`"
+        )
+        version = handler.get_version()
 
-        cls_version = cls.get_version()
-        if cls_version in PacketRegistery._handlers:
-            msg = f"Packet v{cls_version} is registered"
-            logger.error(msg)
-            raise TypeError(msg)
+        assert version in range(1, 255),(
+            f"Version number {version} is not allowed!"
+        )
+        assert version not in PacketRegistery._handlers, (
+            f"Packet v{version} is already registered"
+        )
 
-        PacketRegistery._handlers[cls_version] = cls
-        logger.debug(f"Packet v{cls_version} registered")
-        return cls
+        PacketRegistery._handlers[version] = handler
+        logger.debug(f"Packet v{version} registered")
+        return handler
 
     @classmethod
-    def get(cls, version: int) -> Type[Packet]:
+    def get_handler(cls, version: int) -> Type[Packet]:
         """Get `Packet` class for the version."""
         try:
             handler = cls._handlers[version]
@@ -88,25 +112,26 @@ class PacketRegistery:
         return handler
 
     @classmethod
-    def supported_versions(cls) -> Tuple[int, ...]:
-        """Provides supported packet versions."""
+    def registered_versions(cls) -> Tuple[int, ...]:
+        """Provides registered packet versions."""
         return tuple(cls._handlers.keys())
 
 
+# TODO - what kind of packets are required?
 class PacketKind(IntEnum):
     """Defines the kind of packet."""
 
-    EXIT = 0
-    """Client is closing the connection."""
+    # EXIT = 0
+    # """Client is closing the connection."""
 
-    INIT = auto()
-    """Initialise the connection with server."""
+    # INIT = auto()
+    # """Initialise the connection with server."""
 
-    ACK = auto()
-    """Acknowledgement about packet from server."""
+    # ACK = auto()
+    # """Acknowledgement about packet from server."""
 
-    def __str__(self):
-        return self.name.lower().replace("_", "-")
+    # def __str__(self):
+    #     return self.name.lower().replace("_", "-")
 
 
 @PacketRegistery.register
@@ -150,8 +175,14 @@ class PacketV1(Packet):
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
-        if len(self.data) > self.MAX_DATA_SIZE:
-            msg = f"Packet data length exceeded, {(len(self.data)/1024):.1}KB > 64KB"
+        size_limit = self.data_size_limit
+        data_size = len(self.data)
+        if data_size < size_limit:
+            msg = (
+                f"{self.__class__.__name__} data size exceeded: "
+                f"size={(data_size/1024):.3}KB "
+                f"Limit={(size_limit/1024):.0}KB"
+            )
             logger.error(msg)
             raise ValueError(msg)
 
@@ -160,18 +191,8 @@ class PacketV1(Packet):
         length = struct.pack("H", len(self.data))
         return version + kind + length + self.data
 
+    @cached_property
     @property
-    def MAX_DATA_SIZE(self) -> int:
-        """Maximum size of payload data supported."""
-        return 0xFFFF_FFFF_FFFF_FFFF
-
-    def __str__(self):
-        return str(self.data)
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, type(self))
-            and self.get_version() == other.get_version()
-            and self.kind == other.kind
-            and self.data == other.data
-        )
+    def data_size_limit(self) -> int:
+        """Maximum bytes of data supported."""
+        return 0xFFFF_FFFF_FFFF_FFFF - (8+8+16)

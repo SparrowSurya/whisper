@@ -1,13 +1,16 @@
-import json
+"""
+This module contains the mechanism for communicating and action on the
+response sent by the server.
+"""
+
 import asyncio
 import logging
 from concurrent.futures import Future, InvalidStateError
-from typing import Callable, Coroutine, Dict, Any
+from typing import Coroutine, Dict, Any
 
-from .core.packet import Packet, PacketV1, PacketKind
+from .core.packet import Packet
 from .core.client import BaseClient, ClientConn
-from .utils.decorators import aworker
-from .settings import Settings
+from .settings import Setting
 
 
 logger = logging.getLogger(__name__)
@@ -15,46 +18,40 @@ logger = logging.getLogger(__name__)
 
 class Client(BaseClient):
     """
-    Client backend controls and manages the connection being used for
-    multiple purposes.
+    The class provides the asynchronous client backend actions for the
+    app. It uses `asyncio` the event loop to manage async tasks.
     """
 
     def __init__(self, conn: ClientConn | None = None):
-        """
-        The connection object is used to connect with remote server.
-        Same is used for multiple chats and servers on the client side.
-        """
+        """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, conn)
         self.stop_fut: Future[None] = Future()
-        self.setting = Settings.default()
+        self.setting = Setting.from_defaults()
+
+        # TODO - there must be a better way
         self.tasks: Dict[str, Coroutine[Any, Any, Any]] = {}
 
-    def cfg(self, key: str) -> Any:
-        """Get current configuration."""
-        return self.setting.get(key)
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """Asyncio running eventloop."""
+        return asyncio.get_running_loop()
 
-    def serialize(self, data: Dict[str, Any], enc: str) -> bytes:
-        """Serialize the dict object into stream of bytes."""
-        return json.dumps(data).encode(encoding="UTF-8")
+    def schedule(self, task: Coroutine[Any, Any, Any]) -> Future[Any]:
+        """Schedules a task into event loop."""
+        return asyncio.run_coroutine_threadsafe(task, self.loop)
 
-    def deserialize(self, data: bytes, enc: str) -> Dict[str, Any]:
-        """Deserialize the stream of bytes into dict object."""
-        return json.loads(data.decode(encoding="UTF-8"))
+    def send_packet(self, packet: Packet) -> Future[Any]:
+        """Schedules the packet in the queue."""
+        return self.schedule(self.sendq.put(packet))
 
-    def send_packet(self,
-        packet: Packet,
-        callback: Callable[[Future[None]], None] | None = None,
-    ) -> Future[None]:
-        """Schedule the packet to be sent to server.
-        Callback is invoked after the task finishes."""
-        return self.schedule(self.sendq.put(packet), callback)
-
-    @aworker("PacketRecvQueue", logger=logger)
-    async def alisten(self):
-        """Listens the incoming messages to the queue."""
-        while True:
-            packet = await self.recvq.get()
-            data = self.decode(packet.data, str(packet.enc))
+    async def main(self):
+        """
+        This defines the entry point of backend. It determines the
+        series of events (lifecycle) in backend.
+        """
+        self.connect(self.setting.get("host"), self.setting.get("port"))
+        # TODO - handle workers and tasks and closing
+        self.disconnect()
 
     def stop(self):
         """Stops the scheduled/running tasks."""
@@ -63,75 +60,8 @@ class Client(BaseClient):
         except InvalidStateError as error:
             logger.exception(f"Caught exception: {error}")
 
-    def schedule(
-        self,
-        task: Coroutine[Any, Any, None],
-        on_done: Callable[[Future[None]], None] | None = None,
-    ) -> Future:
-        """
-        Schedules a task.
-        `on_done` is called when the task is complete.
-        """
-        fut = asyncio.run_coroutine_threadsafe(task, self.loop)
-        if on_done is not None:
-            fut.add_done_callback(on_done)
-        return fut
-
-    @property
-    def loop(self) -> asyncio.AbstractEventLoop:
-        """Asyncio running eventloop."""
-        return asyncio.get_running_loop()
-
-    async def main(self):
-        """
-        The main entry point for coroutines execution.
-        This is used by `run` method to execute coroutines.
-        """
-        self.connect(self.cfg("host"), self.cfg("port"))
-        self.schedule_workers()
-        await asyncio.wrap_future(self.stop_fut)  # blocks until stop() is called
-        self.cancel_workers()
-        self.disconnect()
-
     def schedule_workers(self):
-        """Schedule the workers and tasks. It is called after the connection
-        is established."""
-        self.schedule(self.alisten())
-        self.schedule(self.arecv(self.reader))
-        self.schedule(self.asend(self.writer))
-        # self.send_init_packet()
-
-    def cancel_workers(self):
-        """Stop all the running workers."""
-        for task in asyncio.all_tasks():
-            task.cancel()
-
-    # TODO; handle return on disconnect
-    # returns b"" when connection is closed by server
-    # TODO: fails when returns b"" causes the calle to raise error
-    async def reader(self, n: int) -> bytes:
-        """Reads n bytes from connection."""
-        return await self.aread(n, self.loop)
-
-    async def writer(self, d: bytes) -> None:
-        """Writes data to connection."""
-        return await self.awrite(d, self.loop)
-
-    # def send_init_packet(self):
-    #     """Send the init packet."""
-    #     data = self.encode({
-    #         "username": self.cfg("username"),
-    #     })
-    #     packet = PacketV1(
-    #         type=PacketKind.INIT,
-    #         data=data,
-    #     )
-    #     self.send_packet(packet)
-
-    # def send_exit_packet(self):
-    #     """Send the exit packet."""
-    #     packet = PacketV1(
-    #         type=PacketKind.EXIT,
-    #         data=b"",
-    #     )
-    #     self.send_packet(packet)
+        """Schedule workers and tasks."""
+        self.schedule(self.arecv(lambda n: self.aread(n, self.loop)))
+        self.schedule(self.asend(lambda d: self.awrite(d, self.loop)))
+        # TODO - packet for connection init

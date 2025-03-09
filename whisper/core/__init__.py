@@ -1,3 +1,7 @@
+"""
+This module provides the core functionality of the app.
+"""
+
 from .client import ClientConn
 from .server import ServerConn
 from .packet import Packet, PacketKind, PacketV1

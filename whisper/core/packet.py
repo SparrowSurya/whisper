@@ -97,12 +97,12 @@ class PacketRegistery:
         >>> class PacketV1(Packet):
         >>>     ...
         """
-        assert not issubclass(handler, Packet), (
+        assert issubclass(handler, Packet), (
             f"{handler.__name__} must be subclass of `Packet`"
         )
         version = handler.get_version()
 
-        assert version in range(1, 255),(
+        assert version in range(1, 256),(
             f"Version number {version} is not allowed!"
         )
         assert version not in PacketRegistery._handlers, (

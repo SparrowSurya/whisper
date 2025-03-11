@@ -5,10 +5,10 @@ server.
 
 import asyncio
 import logging
-from typing import Awaitable, Callable, Tuple
+from typing import Tuple
 
 from whisper.core.packet import Packet
-from whisper.utils.decorators import aworker
+from whisper.core.workers import PacketReader, PacketWriter
 from .connection import ClientConn
 
 
@@ -28,10 +28,42 @@ class BaseClient:
         self.sendq: asyncio.Queue[Packet] = asyncio.Queue()
         self.recvq: asyncio.Queue[Packet] = asyncio.Queue()
 
+        self.io_controller = asyncio.Condition()
+        self.reader = PacketReader(
+            queue=self.recvq,
+            reader=self.aread,
+            should_read=self.await_io,
+        )
+        self.writer = PacketWriter(
+            queue=self.sendq,
+            writer=self.awrite,
+            should_write=self.await_io,
+        )
+
     @property
     def is_connected(self) -> bool:
         """Check if client is connected."""
         return self.connection.is_connected
+
+
+    # FIXME - WIP (reconnect)
+    async def await_io(self) -> bool:
+        """
+        Controls the read/write on sockets based on the connection
+        status. During socket disconnect it can be awaited until the
+        underlying socket is again ready for io operations. Moreover,
+        the return value provides information about the closing status.
+        """
+        async with self.io_controller:
+            while not self.is_connected:
+                await self.io_controller.wait()
+            return True
+
+    # FIXME - WIP (reconnect & unused)
+    async def resume_io(self):
+        """Resume the io operation awaited by `await_io`."""
+        async with self.io_controller:
+            self.io_controller.notify_all()
 
     def server_address(self) -> Tuple[str, int]:
         """Provides the connected server address."""
@@ -47,23 +79,6 @@ class BaseClient:
         """Closes connection."""
         self.connection.disconnect()
         logger.debug("Connection closed")
-
-    @aworker("PacketReader", logger=logger) # TODO - use handler
-    async def arecv(self, reader: Callable[[int], Awaitable[bytes]]):
-        """Coroutine reading incoming packets from the server."""
-        while True:
-            packet = await Packet.from_stream(reader)
-            await self.recvq.put(packet)
-            logger.debug(f"Received: {packet!r}")
-
-    @aworker("PacketWriter", logger=logger) # TODO - use handler
-    async def asend(self, writer: Callable[[bytes], Awaitable[None]]):
-        """Coroutine writing packets to the server."""
-        while True:
-            packet = await self.sendq.get()
-            data = packet.to_stream()
-            await writer(data)
-            logger.debug(f"Sent: {packet!r}")
 
     async def aread(self,
         n: int,

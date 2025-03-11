@@ -18,5 +18,5 @@ class Root(tk.Frame):
         self.exit_button = tk.Button(self, text="Exit")
         self.exit_button.pack(padx=2, pady=4)
 
-        self.start_button.config(command=self.app.run_thread)
+        self.start_button.config(command=self.app.run)
         self.exit_button.config(command=self.app.shutdown)

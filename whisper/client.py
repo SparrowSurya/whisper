@@ -6,7 +6,7 @@ response sent by the server.
 import asyncio
 import logging
 from concurrent.futures import Future, InvalidStateError
-from typing import Coroutine, Dict, Any
+from typing import Coroutine, Set, Any
 
 from .core.packet import Packet
 from .core.client import BaseClient, ClientConn
@@ -25,11 +25,8 @@ class Client(BaseClient):
     def __init__(self, conn: ClientConn | None = None):
         """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, conn)
-        self.stop_fut: Future[None] = Future()
         self.setting = Setting.from_defaults()
-
-        # TODO - there must be a better way
-        self.tasks: Dict[str, Coroutine[Any, Any, Any]] = {}
+        self.stop_fut: Future[None] = Future()
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -37,7 +34,7 @@ class Client(BaseClient):
         return asyncio.get_running_loop()
 
     def schedule(self, task: Coroutine[Any, Any, Any]) -> Future[Any]:
-        """Schedules a task into event loop."""
+        """Schedules a task (threadsafe) into event loop."""
         return asyncio.run_coroutine_threadsafe(task, self.loop)
 
     def send_packet(self, packet: Packet) -> Future[Any]:
@@ -49,19 +46,30 @@ class Client(BaseClient):
         This defines the entry point of backend. It determines the
         series of events (lifecycle) in backend.
         """
-        self.connect(self.setting.get("host"), self.setting.get("port"))
-        # TODO - handle workers and tasks and closing
+        host, port = self.setting.get("host"), self.setting.get("port")
+        self.connect(host, port)
+        await self.process_tasks()
         self.disconnect()
 
     def stop(self):
-        """Stops the scheduled/running tasks."""
+        """Sets the `stop_fut` result to signal for `process_tasks` ending."""
         try:
             self.stop_fut.set_result(None)
-        except InvalidStateError as error:
-            logger.exception(f"Caught exception: {error}")
+        except InvalidStateError:
+            pass
 
-    def schedule_workers(self):
-        """Schedule workers and tasks."""
-        self.schedule(self.arecv(lambda n: self.aread(n, self.loop)))
-        self.schedule(self.asend(lambda d: self.awrite(d, self.loop)))
-        # TODO - packet for connection init
+    async def process_tasks(self):
+        """Coroutine handelling the various events."""
+        running_tasks = [asyncio.create_task(task) for task in self.get_tasks()]
+
+        # Wait for the stop_fut to complete
+        await asyncio.wrap_future(self.stop_fut)
+
+        for task in running_tasks:
+            task.cancel()
+
+        return await asyncio.gather(*running_tasks, return_exceptions=True)
+
+    def get_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
+        """Provides a set of tasks to start with."""
+        return {self.reader(), self.writer()}

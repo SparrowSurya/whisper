@@ -55,7 +55,7 @@ class App(Client, MainWindow):
         try:
             MainWindow.mainloop(self, n)
         except KeyboardInterrupt:
-            logger.info("Force closing the application (KeyboardInterrput)")
+            logger.info("Force closing the app! (KeyboardInterrput)")
         except Exception as ex:
             logger.exception(f"App.mainloop: {ex}")
         finally:

@@ -46,7 +46,7 @@ class Packet(abc.ABC):
         """Packet version."""
 
     @classmethod
-    async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
+    async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]) -> "Packet":
         """
         Creates the packet from asynchronous stream of bytes. It reads
         the first byte from stream to know the packet version then call

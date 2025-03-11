@@ -6,6 +6,7 @@ and communication.
 import asyncio
 import logging
 
+from whisper.core.packet import Packet
 from .connection import ServerConn
 from .handle import ConnHandle, Address
 
@@ -29,20 +30,21 @@ class BaseServer:
         logger.debug(f"Accepted: {address}")
         return ConnHandle(sock, Address(*address))
 
-    async def aread(self,
+    async def read(self,
         conn: ConnHandle,
-        n: int,
         loop: asyncio.AbstractEventLoop,
-    ) -> bytes:
+    ) -> Packet:
         """Read `n` bytes from connection."""
-        return await self.connection.read(conn.sock, n, loop)
+        reader = lambda n: self.connection.read(conn.sock, n, loop)  # noqa: E731
+        return await Packet.from_stream(reader)
 
-    async def awrite(self,
+    async def write(self,
         conn: ConnHandle,
-        data: bytes,
+        packet: Packet,
         loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Write `data` to connection."""
+        data = packet.to_stream()
         return await self.connection.write(conn.sock, data, loop)
 
     def close(self, conn: ConnHandle):

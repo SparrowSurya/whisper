@@ -4,11 +4,7 @@ This module provides connection object for client.
 
 import socket
 import asyncio
-import logging
 from typing import Tuple
-
-
-logger = logging.getLogger(__name__)
 
 
 class ClientConn:
@@ -22,7 +18,6 @@ class ClientConn:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.__connected = False
 
     def address(self) -> Tuple[str, int]:
         """
@@ -31,37 +26,17 @@ class ClientConn:
         """
         return self.sock.getsockname()
 
-    @property
-    def is_connected(self) -> bool:
-        """Check if client is connected.
-
-        NOTE: This do not ensures that underlying connection is alive.
-        """
-        return self.__connected
-
-    def connect(self, host: str, port: int):
+    def open(self, host: str, port: int):
         """Establish connection with server."""
-        if self.is_connected:
-            msg = "Connection is already established!"
-            logger.error(msg)
-            raise RuntimeError(msg)
-
         # connect needs to be waited to complete the operation otherwise
         # BlockingIOError: [Errno 115] Operation now in progress
         self.sock.setblocking(True)
         self.sock.connect((host, port))
         self.sock.setblocking(False)
-        self.__connected = True
 
-    def disconnect(self):
+    def close(self):
         """Close the connection with server."""
-        if not self.is_connected:
-            msg = "Connection is not established!"
-            logger.error(msg)
-            raise RuntimeError(msg)
-
         self.sock.close()
-        self.__connected = False
 
     async def read(self,
         n: int,

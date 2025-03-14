@@ -7,9 +7,8 @@ import logging
 from typing import Any, Callable, NoReturn, Awaitable
 
 
-def worker(name: str, logger: logging.Logger):
-    """Provide error handelling for worker coroutine method."""
-    name = f"Worker-{name}"
+def handle_cancellation(name: str, logger: logging.Logger):
+    """Provide error handelling for coroutines."""
 
     def wrapper(func: Callable[[], Awaitable[NoReturn]]):
         async def inner(*args: Any, **kwargs: Any):

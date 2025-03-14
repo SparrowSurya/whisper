@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import logging
 from typing import Callable, Awaitable
 
-from whisper.utils.decorators import worker
+from whisper.utils.decorators import handle_cancellation
 from .packet import Packet
 
 
@@ -23,7 +23,7 @@ class PacketReader:
     reader: Callable[[int, AbstractEventLoop], Awaitable[bytes]]
     should_read: Callable[[], Awaitable[bool]]
 
-    @worker("PacketReader", logger=logger)
+    @handle_cancellation("PacketReader", logger=logger)
     async def __call__(self):
         """Coroutine reading the packets."""
         loop = get_running_loop()
@@ -45,7 +45,7 @@ class PacketWriter:
     writer: Callable[[bytes, AbstractEventLoop], Awaitable[None]]
     should_write: Callable[[], Awaitable[bool]]
 
-    @worker("PacketWriter", logger=logger)
+    @handle_cancellation("PacketWriter", logger=logger)
     async def __call__(self):
         """Coroutine writing the packets."""
         loop = get_running_loop()

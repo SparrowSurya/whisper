@@ -3,17 +3,14 @@ This modules provies the packet used for communication to the server.
 """
 
 import abc
-import json
 import struct
 import logging
 from enum import IntEnum
 from functools import cached_property
-from typing import Awaitable, Callable, Type, Tuple, Dict, Any
+from typing import Awaitable, Callable, Type, Tuple, Dict
 
 
 __all__ = (
-    "serialize",
-    "deserialize",
     "PacketKind",
     "Packet",
     "PacketRegistery",
@@ -24,21 +21,15 @@ __all__ = (
 logger = logging.getLogger(__name__)
 
 
-def serialize(data: Dict[str, Any]) -> bytes:
-    """Serialize the dict object into stream of bytes."""
-    return json.dumps(data).encode(encoding="UTF-8")
-
-def deserialize(data: bytes) -> Dict[str, Any]:
-    """Deserialize the stream of bytes into dict object."""
-    return json.loads(data.decode(encoding="UTF-8"))
-
-
 class Packet(abc.ABC):
     """
     Abstract Packet class. It handles the packet being created from
     stream of bytes and the required packet version. Implement this
     to customise the packet structure.
     """
+
+    def __init__(self, data: bytes = b""):
+        self.data = data
 
     @classmethod
     @abc.abstractmethod
@@ -174,12 +165,8 @@ class PacketV1(Packet):
 
         NOTE - data size should not exceed 64KB.
         """
+        super().__init__(data)
         self.kind = kind
-        self.data = data
-
-    def get_data(self) -> bytes:
-        """The data carried by the packet."""
-        return self.data
 
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
@@ -208,7 +195,6 @@ class PacketV1(Packet):
         return version + kind + length + self.data
 
     @cached_property
-    @property
     def data_size_limit(self) -> int:
         """Maximum bytes of data supported."""
         return 0xFFFF_FFFF_FFFF_FFFF - (8+8+16)

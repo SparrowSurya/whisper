@@ -3,13 +3,14 @@ This module provides handler workers for connections.
 """
 
 
-from asyncio import Queue, AbstractEventLoop, get_running_loop
-from dataclasses import dataclass
 import logging
-from typing import Callable, Awaitable
+from dataclasses import dataclass
+from asyncio import Queue, AbstractEventLoop, get_running_loop
+from typing import Any, Callable, Awaitable, Dict
 
 from whisper.utils.decorators import handle_cancellation
-from .packet import Packet
+from .packet import Packet, PacketKind
+from .codec import deserialize
 
 
 logger = logging.getLogger(__name__)
@@ -58,3 +59,20 @@ class PacketWriter:
 
     def __repr__(self):
         return f"<cls: {self.__class__.__name__}>"
+
+
+@dataclass(frozen=True, repr=False)
+class PacketHandler:
+    """Handles the received packet."""
+
+    queue: Queue[Packet]
+    handlers: Dict[PacketKind, Callable[[Dict[str, Any]], None]]
+
+    @handle_cancellation("PacketHandler", logger=logger)
+    async def __call__(self, *args, **kwds):
+        """Coroutine handelling the packets."""
+        while True:
+            packet = await self.queue.get()
+            data = deserialize(packet.data)
+            handle = self.handlers[packet.kind]
+            handle(**data)

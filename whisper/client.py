@@ -61,13 +61,9 @@ class Client(BaseClient):
     async def process_tasks(self):
         """Coroutine handelling the various events."""
         running_tasks = [asyncio.create_task(task) for task in self.get_tasks()]
-
-        # Wait for the stop_fut to complete
         await asyncio.wrap_future(self.stop_fut)
-
         for task in running_tasks:
             task.cancel()
-
         return await asyncio.gather(*running_tasks, return_exceptions=True)
 
     def get_tasks(self) -> Set[Coroutine[Any, Any, Any]]:

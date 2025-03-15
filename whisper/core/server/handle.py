@@ -24,7 +24,7 @@ class Address:
 
 @dataclass(repr=False, slots=True)
 class ConnHandle:
-    """Client TCP connection handler object."""
+    """Client connection handler object."""
 
     sock: socket.socket
     """Underlying socket object."""
@@ -61,3 +61,6 @@ class ConnHandle:
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.address}>"
+
+    def __hash__(self) -> int:
+        return self.sock.__hash__()

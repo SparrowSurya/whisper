@@ -2,10 +2,12 @@
 This module provides handler workers for connections.
 """
 
+from socket import socket
 from asyncio import Queue, AbstractEventLoop, get_running_loop
-from typing import Any, Callable, Awaitable, Dict
+from typing import Any, Callable, Awaitable, Dict, Tuple
 
-from whisper.utils.decorators import handle_cancellation
+from whisper.utils.coro import handle_cancellation
+from .server.handle import Address, ConnHandle
 from .packet import Packet, PacketKind
 from .codec import deserialize
 
@@ -74,6 +76,32 @@ class PacketHandler:
             data = deserialize(packet.data)
             handle = self.handlers[packet.kind]
             handle(**data)
+
+    def __repr__(self):
+        return f"<cls: {self.__class__.__name__}>"
+
+
+class AcceptHandler:
+    """Accepts the connections."""
+
+    def __init__(self,
+        handler: Callable[[ConnHandle], Awaitable[None]],
+        acceptor: Callable[
+            [AbstractEventLoop],
+            Awaitable[Tuple[socket, Address]]
+        ],
+    ):
+        self.handler = handler
+        self.acceptor = acceptor
+
+    @handle_cancellation("AcceptHandler")
+    async def __call__(self):
+        loop = get_running_loop()
+
+        while True:
+            sock, addr = await self.acceptor(loop)
+            conn = ConnHandle(sock, addr)
+            loop.create_task(self.handler(conn))
 
     def __repr__(self):
         return f"<cls: {self.__class__.__name__}>"

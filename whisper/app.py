@@ -83,7 +83,7 @@ class App(Client, MainWindow):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
             logger.debug("Shutting down backend")
-            self.stop()
+            self.stop_running()
             logger.debug(f"{self.thread.name} joining ...")
             self.thread.join()
             logger.debug(f"{self.thread.name} ended!")

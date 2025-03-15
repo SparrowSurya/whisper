@@ -42,7 +42,7 @@ class BaseServer:
         conn: ConnHandle,
         packet: Packet,
         loop: asyncio.AbstractEventLoop,
-    ) -> None:
+    ):
         """Write `data` to connection."""
         data = packet.to_stream()
         return await self.connection.write(conn.sock, data, loop)
@@ -60,7 +60,7 @@ class BaseServer:
     def start_server(self, host: str, port: int):
         """Start the server on given address."""
         self.connection.start(host, port)
-        logger.info(f"Server running on {self.connection.address}")
+        logger.info(f"Server running on {self.connection.address()}")
 
     def stop_server(self):
         """Close the server."""

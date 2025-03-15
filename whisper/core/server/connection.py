@@ -4,11 +4,7 @@ This module provides connection object for server.
 
 import socket
 import asyncio
-import logging
 from typing import Tuple
-
-
-logger = logging.getLogger(__name__)
 
 
 class ServerConn:
@@ -22,7 +18,6 @@ class ServerConn:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.__serving = False
 
     def address(self) -> Tuple[str, int]:
         """
@@ -31,31 +26,14 @@ class ServerConn:
         """
         return self.sock.getsockname()
 
-    @property
-    def is_serving(self) -> bool:
-        """Check if server has started."""
-        return self.__serving
-
     def start(self, host: str, port: int):
         """Start the server and listen for incoming connection."""
-        if self.is_serving:
-            msg = "Server is already running!"
-            logger.error(msg)
-            raise RuntimeError(msg)
-
         self.sock.bind((host, port))
         self.sock.listen(0)
-        self.__serving = True
 
     def stop(self):
         """Stop the server."""
-        if not self.is_serving:
-            msg = "Server is not running!"
-            logger.error(msg)
-            raise RuntimeError(msg)
-
         self.sock.close()
-        self.__serving = False
 
     async def accept(
         self,

@@ -1,5 +1,5 @@
 """
-This module provides decorator for backend asyncio workers.
+This module provides utility for coroutines.
 """
 
 import asyncio

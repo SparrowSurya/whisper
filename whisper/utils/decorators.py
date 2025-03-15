@@ -7,7 +7,10 @@ import logging
 from typing import Any, Callable, NoReturn, Awaitable
 
 
-def handle_cancellation(name: str, logger: logging.Logger):
+logger = logging.getLogger(__name__)
+
+
+def handle_cancellation(name: str):
     """Provide error handelling for coroutines."""
 
     def wrapper(func: Callable[[], Awaitable[NoReturn]]):

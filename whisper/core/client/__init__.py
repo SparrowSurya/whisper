@@ -27,36 +27,33 @@ class ConnState(StrEnum):
 
 class BaseClient:
     """
-    Base Client class for communicating with server. It manages
-    incoming and outgoing packets using asynchronous queue. It uses
-    `Packet` as means of massages.
+    Base Client class for communicating with server. It manages the
+    connection state. It stores incoming and outgoing packets using
+    asynchronous queue.
     """
 
-    def __init__(self, tcp_conn: ClientConn | None = None):
+    def __init__(self, conn: ClientConn | None = None):
         """Requires a connection object to connect to server."""
-        self.connection = tcp_conn or ClientConn()
-
+        self.connection = conn or ClientConn()
         self.conn_state = ConnState.NOT_CONNECTED
-        self.io_controller = asyncio.Condition()
+
         self.reader = PacketReader(
             queue=self.recvq,
             reader=self.aread,
-            should_read=self.await_io,
         )
         self.writer = PacketWriter(
             queue=self.sendq,
             writer=self.awrite,
-            should_write=self.await_io,
         )
 
     @cached_property
     def sendq(self) -> asyncio.Queue[Packet]:
-        """Stores outgoing pckets to server."""
+        """Stores outgoing packets to server."""
         return asyncio.Queue()
 
     @cached_property
     def recvq(self) -> asyncio.Queue[Packet]:
-        """Stores incoming pckets from server."""
+        """Stores incoming packets from server."""
         return asyncio.Queue()
 
     @property
@@ -66,25 +63,6 @@ class BaseClient:
         connection.
         """
         return self.conn_state is ConnState.CONNECTED
-
-    # WIP
-    async def await_io(self) -> bool:
-        """
-        Controls the read/write on sockets based on the connection
-        status. During socket disconnect it can be awaited until the
-        underlying socket is again ready for io operations. Moreover,
-        the return value provides information about the closing status.
-        """
-        async with self.io_controller:
-            # while not self.is_connected:
-            #     await self.io_controller.wait()
-            return True
-
-    # LATER
-    # async def resume_io(self):
-    #     """Resume the io operation awaited by `await_io`."""
-    #     async with self.io_controller:
-    #         self.io_controller.notify_all()
 
     def server_address(self) -> Tuple[str, int]:
         """Provides the connected server address."""
@@ -102,13 +80,6 @@ class BaseClient:
         self.connection.close()
         self.conn_state = ConnState.DISCONNECTED
         logger.debug("Connection closed")
-
-    # LATER
-    # def reconnect(self):
-    #     """Reconnect to server."""
-    #     while self.conn_state is ConnState.CONNECTED:
-    #         self.connection.close()
-    #         self.connection.open()
 
     async def aread(self,
         n: int,

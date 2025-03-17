@@ -1,6 +1,6 @@
 """
-This module provides a handler object to manage connection and related
-data.
+This module provides a handler class to manage client connections and
+their data.
 """
 
 import socket

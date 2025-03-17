@@ -1,12 +1,10 @@
 """
-This module contains the mechanism for communicating and action on the
-response sent by the server.
+This module contains the client class which can communicate with server
+and perform chat application related functions.
 """
 
 import logging
-from typing import Coroutine, Set, Any
 
-from .core.packet import Packet
 from .core.client import BaseClient, ClientConn
 from .core.eventloop import EventLoop
 from .settings import Setting
@@ -17,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 class Client(BaseClient, EventLoop):
     """
-    The class provides the asynchronous client backend actions for the
-    app. It uses `asyncio` event loop to manage async tasks.
+    The class provides the asynchronous client backend for the chat
+    application. It uses `EventLoop` to manage tasks, coroutines and
+    workers.
     """
 
     def __init__(self, conn: ClientConn | None = None):
@@ -27,20 +26,16 @@ class Client(BaseClient, EventLoop):
         EventLoop.__init__(self)
         self.setting = Setting.from_defaults()
 
-    def send_packet(self, packet: Packet):
-        """Schedules the packet in the outgoing queue."""
-        self.schedule(self.sendq.put(packet))
-
     async def main(self):
         """
         This defines the entry point of backend. It determines the
         series of events (lifecycle) in backend.
         """
-        host, port = self.setting.get("host"), self.setting.get("port")
-        self.connect(host, port)
+        host, port = self.setting("host"), self.setting("port")
+        logger.debug(f"Connecting to {(host, port)} ...")
+        self.open_connection(host, port)
+        logger.debug("Connection established!")
         await self.process_tasks()
-        self.disconnect()
-
-    def get_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
-        """Provides a set of tasks to start with."""
-        return {self.reader(), self.writer()}
+        logger.debug("Disconnecting ...")
+        self.close_connection()
+        logger.debug("Disconnected!")

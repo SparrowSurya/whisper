@@ -35,6 +35,9 @@ class Setting: # TODO
         """Get the setting value."""
         return getattr(self._config, key)
 
+    def __call__(self, key: str) -> Any:
+        return self.get(key)
+
     # TODO - this should be done later
 
     # @classmethod

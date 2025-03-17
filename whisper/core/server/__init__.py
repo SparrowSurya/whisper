@@ -4,19 +4,10 @@ and communication.
 """
 
 import asyncio
-import logging
-from socket import socket
-from functools import cached_property
-from typing import Set, Tuple
 
 from whisper.core.packet import Packet
-from ..workers import AcceptHandler
-from .response import Response
 from .connection import ServerConn
-from .handle import ConnHandle
-
-
-logger = logging.getLogger(__name__)
+from .client import ConnHandle
 
 
 class BaseServer:
@@ -28,70 +19,39 @@ class BaseServer:
     def __init__(self, conn: ServerConn | None = None):
         """Initialise connection."""
         self.connection = conn or ServerConn()
-        self.conns: Set[ConnHandle] = set()
-
-        self.acceptor = AcceptHandler(
-            handler=self.handle,
-            acceptor=self.accept, # type: ignore
-        )
-
-    @cached_property
-    def sendq(self) -> asyncio.Queue[Response]:
-        """Stores outgoing response packets to clients."""
-        return asyncio.Queue()
-
-    @cached_property
-    def recvq(self) -> asyncio.Queue[Packet]:
-        """Stores incoming packets from clients."""
-        return asyncio.Queue()
 
     async def accept(self,
         loop: asyncio.AbstractEventLoop,
-    ) -> Tuple[socket, Tuple[str, int]]:
+    ) -> ConnHandle:
         """Accept incoming client connections."""
         sock, address = await self.connection.accept(loop)
-        logger.debug(f"Accepted: {address}")
-        return sock, address
+        return ConnHandle(sock, address) # type: ignore
 
     async def read(self,
-        sock: socket,
+        conn: ConnHandle,
         loop: asyncio.AbstractEventLoop,
     ) -> Packet:
         """Read `n` bytes from connection."""
-        reader = lambda n: self.connection.read(sock, n, loop)  # noqa: E731
+        reader = lambda n: self.connection.read(conn.sock, n, loop)  # noqa: E731
         return await Packet.from_stream(reader)
 
     async def write(self,
-        sock: socket,
+        conn: ConnHandle,
         packet: Packet,
         loop: asyncio.AbstractEventLoop,
     ):
         """Write `data` to connection."""
         data = packet.to_stream()
-        return await self.connection.write(sock, data, loop)
+        return await self.connection.write(conn.sock, data, loop)
 
     def close(self, conn: ConnHandle):
         """Close the connection."""
         conn.sock.close()
-        logger.debug(f"Closed connection: {conn.address}")
-
 
     def start_server(self, host: str, port: int):
         """Start the server on given address."""
         self.connection.start(host, port)
-        logger.info(f"Server running on {self.connection.address()}")
 
     def stop_server(self):
         """Close the server."""
         self.connection.stop()
-        logger.info("Server stopped.")
-
-    async def handle(self, conn: ConnHandle):
-        """Handles the new connection."""
-        self.conns.add(conn)
-        await self.serve(conn)
-        conn.sock.close()
-        self.conns.remove(conn)
-
-    async def serve(self, conn: ConnHandle):
-        """Serve the connection."""

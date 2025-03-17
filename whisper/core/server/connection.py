@@ -1,5 +1,5 @@
 """
-This module provides connection object for server.
+This module provides connection class for server.
 """
 
 import socket

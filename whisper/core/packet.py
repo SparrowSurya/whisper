@@ -5,7 +5,7 @@ This modules provies the packet used for communication to the server.
 import abc
 import struct
 import logging
-from enum import IntEnum
+from enum import IntEnum, auto
 from functools import cached_property
 from typing import Awaitable, Callable, Type, Tuple, Dict
 
@@ -26,6 +26,8 @@ class Packet(abc.ABC):
     Abstract Packet class. It handles the packet being created from
     stream of bytes and the required packet version. Implement this
     to customise the packet structure.
+
+    It depends upon `PacketRegistery` to determine handler.
     """
 
     def __init__(self, data: bytes = b""):
@@ -56,13 +58,12 @@ class Packet(abc.ABC):
     def to_stream(self) -> bytes:
         """Converts the packet into stream of bytes.
 
-        NOTE: This data must be placed before the data being sent by
-        the packet itself.
+        This data must be placed before the data being sent by the
+        packet itself.
         """
         return struct.pack("B", self.get_version())
 
     def __repr__(self):
-        """Simple packet representation."""
         return f"<Packet-v{self.get_version()}>"
 
 
@@ -70,7 +71,7 @@ class PacketRegistery:
     """
     Manages the packet versions and their respective handlers.
 
-    NOTE: Usethis directly instead creating an instance.
+    Use the class directly instead creating an instance.
     """
 
     _handlers: Dict[int, Type[Packet]] = {}
@@ -106,7 +107,7 @@ class PacketRegistery:
 
     @classmethod
     def get_handler(cls, version: int) -> Type[Packet]:
-        """Get `Packet` class for the version."""
+        """Get handler for the packet version."""
         try:
             handler = cls._handlers[version]
         except KeyError as error:
@@ -124,17 +125,11 @@ class PacketRegistery:
 class PacketKind(IntEnum):
     """Defines the kind of packet."""
 
-    # EXIT = 0
-    # """Client is closing the connection."""
+    EXIT = 0
+    INIT = auto()
 
-    # INIT = auto()
-    # """Initialise the connection with server."""
-
-    # ACK = auto()
-    # """Acknowledgement about packet from server."""
-
-    # def __str__(self):
-    #     return self.name.lower().replace("_", "-")
+    def __str__(self):
+        return self.name.upper()
 
 
 @PacketRegistery.register
@@ -161,9 +156,7 @@ class PacketV1(Packet):
         """
         Arguments:
         * kind - kind of the packet
-        * data - data to be transferred
-
-        NOTE - data size should not exceed 64KB.
+        * data - data to be transferred (limited capacity)
         """
         super().__init__(data)
         self.kind = kind
@@ -184,7 +177,7 @@ class PacketV1(Packet):
             msg = (
                 f"{self.__class__.__name__} data size exceeded: "
                 f"size={(data_size/1024):.3}KB "
-                f"Limit={(size_limit/1024):.0}KB"
+                f"limit={(size_limit/1024):.0}KB"
             )
             logger.error(msg)
             raise ValueError(msg)

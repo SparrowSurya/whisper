@@ -3,13 +3,12 @@ This module contains the mechanism for communicating and action on the
 response sent by the server.
 """
 
-import abc
 import asyncio
 from concurrent.futures import Future, InvalidStateError
 from typing import Coroutine, List, Set, Any
 
 
-class EventLoop(abc.ABC):
+class EventLoop:
     """
     The class provides the asynchronous eventloop using `asyncio`. It
     provides mthods to control the running eventloop.
@@ -53,6 +52,6 @@ class EventLoop(abc.ABC):
             task.cancel()
         return await asyncio.gather(*running_tasks, return_exceptions=True)
 
-    @abc.abstractmethod
     def get_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
         """Provides the set of tasks to start with."""
+        return set()

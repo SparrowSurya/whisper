@@ -1,5 +1,5 @@
 """
-This module provides connection object for client.
+This module provides connection class for client.
 """
 
 import socket
@@ -27,7 +27,7 @@ class ClientConn:
         return self.sock.getsockname()
 
     def open(self, host: str, port: int):
-        """Establish connection with server."""
+        """Establish socket connection with given address."""
         # connect needs to be waited to complete the operation otherwise
         # BlockingIOError: [Errno 115] Operation now in progress
         self.sock.setblocking(True)
@@ -35,19 +35,19 @@ class ClientConn:
         self.sock.setblocking(False)
 
     def close(self):
-        """Close the connection with server."""
+        """Closes the socket connection."""
         self.sock.close()
 
     async def read(self,
         n: int,
         loop: asyncio.AbstractEventLoop,
     ) -> bytes:
-        """Read `n` bytes of data from server."""
+        """Read `n` bytes of data from socket."""
         return await loop.sock_recv(self.sock, n)
 
     async def write(self,
         data: bytes,
         loop: asyncio.AbstractEventLoop,
     ) -> None:
-        """Write data to the server."""
+        """Write data to the socket."""
         return await loop.sock_sendall(self.sock, data)

@@ -1,60 +1,37 @@
 """
 This module provides basic client functionality for communication with
-server.
+server with connection management (to some extent).
 """
 
 import asyncio
-import logging
 from enum import StrEnum, auto
-from functools import cached_property
 from typing import Tuple
 
 from whisper.core.packet import Packet
-from whisper.core.workers import PacketReader, PacketWriter
 from .connection import ClientConn
-
-
-logger = logging.getLogger(__name__)
 
 
 class ConnState(StrEnum):
     """Connection state."""
 
     NOT_CONNECTED = auto()
+    """No Connection is established."""
+
     CONNECTED = auto()
-    DISCONNECTED = auto()
+    """Connection is established."""
 
 
 class BaseClient:
     """
-    Base Client class for communicating with server. It manages the
-    connection state. It stores incoming and outgoing packets using
-    asynchronous queue.
+    Base Client class provides a mechanism (packet) to communicate with
+    server. It also manages the connection state. It allows to read and
+    write packets to and from server.
     """
 
     def __init__(self, conn: ClientConn | None = None):
         """Requires a connection object to connect to server."""
         self.connection = conn or ClientConn()
         self.conn_state = ConnState.NOT_CONNECTED
-
-        self.reader = PacketReader(
-            queue=self.recvq,
-            reader=self.aread,
-        )
-        self.writer = PacketWriter(
-            queue=self.sendq,
-            writer=self.awrite,
-        )
-
-    @cached_property
-    def sendq(self) -> asyncio.Queue[Packet]:
-        """Stores outgoing packets to server."""
-        return asyncio.Queue()
-
-    @cached_property
-    def recvq(self) -> asyncio.Queue[Packet]:
-        """Stores incoming packets from server."""
-        return asyncio.Queue()
 
     @property
     def is_connected(self) -> bool:
@@ -68,29 +45,25 @@ class BaseClient:
         """Provides the connected server address."""
         return self.connection.sock.getpeername()
 
-    def connect(self, host: str, port: int):
+    def open_connection(self, host: str, port: int):
         """Connect to server with given address."""
-        logger.debug(f"Connecting to {(host, port)} ...")
         self.connection.open(host, port)
         self.conn_state = ConnState.CONNECTED
-        logger.debug(f"Connected to {(host, port)}!")
 
-    def disconnect(self):
+    def close_connection(self):
         """Closes connection."""
         self.connection.close()
-        self.conn_state = ConnState.DISCONNECTED
-        logger.debug("Connection closed")
+        self.conn_state = ConnState.NOT_CONNECTED
 
-    async def aread(self,
-        n: int,
-        loop: asyncio.AbstractEventLoop,
-    ) -> bytes:
-        """Read `n` bytes from server."""
-        return await self.connection.read(n, loop)
+    async def read(self, loop: asyncio.AbstractEventLoop) -> Packet:
+        """Read packet from server."""
+        reader = lambda n: self.connection.read(n, loop)  # noqa: E731
+        return await Packet.from_stream(reader)
 
-    async def awrite(self,
-        data: bytes,
+    async def write(self,
+        packet: Packet,
         loop: asyncio.AbstractEventLoop,
     ):
-        """Write `data` to server."""
+        """Write packet to server."""
+        data = packet.to_stream()
         return await self.connection.write(data, loop)

@@ -14,10 +14,9 @@ from whisper.utils.coro import handle_cancellation
 async def packet_reader(
     queue: asyncio.Queue[Packet],
     reader: Callable[[], Awaitable[Packet]],
-    condition: Callable[[], Awaitable[bool]],
-):
+) -> NoReturn:
     """Reads the packet into queue (for client)."""
-    while await condition():
+    while True:
         packet = await reader()
         await queue.put(packet)
 
@@ -26,10 +25,9 @@ async def packet_reader(
 async def packet_writer(
     queue: asyncio.Queue[Packet],
     writer: Callable[[Packet], Awaitable[None]],
-    condition: Callable[[], Awaitable[bool]],
-):
+) -> NoReturn:
     """Writes the packet from queue (for client)."""
-    while await condition():
+    while True:
         packet = await queue.get()
         await writer(packet)
 
@@ -38,10 +36,9 @@ async def packet_writer(
 async def packet_handler(
     queue: asyncio.Queue[Packet],
     handler: Callable[[PacketKind], Callable[[bytes], None]],
-    condition: Callable[[], Awaitable[bool]],
-):
+) -> NoReturn:
     """Handles the packet from queue (for client)."""
-    while await condition():
+    while True:
         packet = await queue.get()
         handle = handler(packet.kind) # type: ignore
         if asyncio.iscoroutine(handle):
@@ -54,10 +51,9 @@ async def packet_handler(
 async def connection_acceptor(
     acceptor: Callable[[], Awaitable[ConnHandle]],
     serve: Callable[[ConnHandle], None],
-    condition: Callable[[], Awaitable[bool]],
-):
+) -> NoReturn:
     """Accepts the incoming connections (for server)."""
-    while await condition():
+    while True:
         conn = await acceptor()
         serve(conn)
 

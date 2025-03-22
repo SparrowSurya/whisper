@@ -5,7 +5,7 @@ This module provides coroutines for client and server.
 import asyncio
 from typing import Awaitable, Callable, Iterable, NoReturn, Sequence, Tuple
 
-from whisper.core.packet import Packet, PacketKind
+from whisper.core.packet import Packet, PacketKind # TODO - wrong imports
 from whisper.core.server.client import ConnHandle
 from whisper.utils.coro import handle_cancellation
 

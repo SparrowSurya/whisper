@@ -41,10 +41,7 @@ async def packet_handler(
     while True:
         packet = await queue.get()
         handle = handler(packet.kind) # type: ignore
-        if asyncio.iscoroutine(handle):
-            await handle(packet.data)
-        else:
-            handle(packet.data)
+        handle(packet.data)
 
 
 @handle_cancellation("ConnectionAcceptor")
@@ -72,12 +69,11 @@ async def connection_reader(
 
 @handle_cancellation("ConnectionWriter")
 async def connection_writer(
-    conn: ConnHandle,
     writer: Callable[[Packet, ConnHandle], Awaitable[None]],
     queue: asyncio.Queue[Tuple[Packet, Iterable[ConnHandle]]],
-):
-    """Reads the packet from connection (for server)."""
-    while not conn.close:
+) -> NoReturn:
+    """Writes the packet to connections (for server)."""
+    while True:
         packet, conns = await queue.get()
         for konn in conns:
             await writer(packet, konn)

@@ -8,6 +8,7 @@ import threading
 from typing import Self
 
 from whisper.core.client import ClientConn
+from whisper.settings import ClientSetting
 from .ui import MainWindow
 from .ui.layouts.root import Root
 from .client import Client
@@ -25,9 +26,12 @@ class App(Client, MainWindow):
     Use `mainloop` to run the application.
     """
 
-    def __init__(self, conn: ClientConn | None = None):
+    def __init__(self,
+        setting: ClientSetting | None = None,
+        conn: ClientConn | None = None,
+    ):
         """The `conn` object is used to connect with the servers."""
-        Client.__init__(self, conn)
+        Client.__init__(self, setting=setting, conn=conn)
         MainWindow.__init__(self)
         self.configure_app()
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
@@ -52,6 +56,8 @@ class App(Client, MainWindow):
 
     def mainloop(self, n: int = 0):
         """Starts the application."""
+        # TODO - since error occurs here the application will close
+        # But do not close the mainloop until backend shuts down
         try:
             MainWindow.mainloop(self, n)
         except KeyboardInterrupt:
@@ -66,6 +72,9 @@ class App(Client, MainWindow):
 
         NOTE: This should be running inside `App.thread`.
         """
+        # TODO - it would be better if the error is handelled withn
+        # eventloop so that there would be better control over running
+        # eventloop
         try:
             asyncio.run(self.main())
         except BaseException as ex:
@@ -76,6 +85,7 @@ class App(Client, MainWindow):
         """Starts the backend thread."""
         if not self.thread.is_alive():
             self.thread.start()
+            logger.info(f"{self.thread.name} is running!")
         else:
             logger.warning(f"{self.thread.name} is already running!")
 
@@ -83,7 +93,7 @@ class App(Client, MainWindow):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
             logger.debug("Shutting down backend")
-            self.stop_running()
+            Client.shutdown(self)
             logger.debug(f"{self.thread.name} joining ...")
             self.thread.join()
             logger.debug(f"{self.thread.name} ended!")

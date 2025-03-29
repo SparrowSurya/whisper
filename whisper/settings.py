@@ -1,44 +1,54 @@
 """
-This module provides settings manager for the app.
+This module provides settings manager class for client application to
+manage the application configuration and user data.
 """
 
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
 
-@dataclass(kw_only=True)
-class AppConfig: # TODO
-    """Application configuration."""
+@dataclass(kw_only=True, slots=True, repr=False)
+class ClientConfig:
+    """Stores the client configuration."""
 
     host: str = field(default="127.0.0.1")
     port: int = field(default=50_005)
-    username: str = field(default="")
 
     def as_dict(self) -> Dict[str, Any]:
-        """Provide the config as dict object."""
+        """Provide configuration as dict object."""
         return self.__getstate__() # type: ignore
 
 
 @dataclass(frozen=True, repr=False, eq=False, match_args=False)
-class Setting: # TODO
-    """Settings manager for the application."""
+class ClientSetting:
+    """Cliennt Setting manager."""
 
-    _config: AppConfig
-    _default: AppConfig = field(default_factory=AppConfig, init=False)
+    _config: ClientConfig
+    """Application configuration."""
+
+    data: Dict[str, Any] = field(default_factory=dict)
+    """User data."""
 
     @classmethod
-    def from_defaults(cls):
-        """Create from default settings."""
-        return cls(AppConfig())
+    def defaults(cls):
+        """Use default values."""
+        return cls(ClientConfig())
 
     def get(self, key: str) -> Any:
-        """Get the setting value."""
+        """Get the configuration value."""
         return getattr(self._config, key)
+
+    def set(self, key: str, value: Any):
+        """Sets the config if the key is present."""
+        if hasattr(self._config, key):
+            setattr(self._config, key, value)
+        else:
+            raise KeyError(f"`{key}` does not exist, maybe use `set_data`.")
 
     def __call__(self, key: str) -> Any:
         return self.get(key)
 
-    # TODO - this should be done later
+    # TODO - this will be done later
 
     # @classmethod
     # def get_default_filepath(cls) -> str:

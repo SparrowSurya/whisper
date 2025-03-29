@@ -29,7 +29,7 @@ class PacketV1(Packet):
     ```
       1 2 3 4 5 6 7 8   1 2 3 4 5 6 7 8   1 2 3 4 5 6 7 8   1 2 3 4 5 6 7 8
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
-    |     Version     |      type       |            Data length            |
+    |     Version     |   PacketType    |            Data length            |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
     |                                  Data                                 |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
@@ -41,17 +41,17 @@ class PacketV1(Packet):
         """Packet version."""
         return 1
 
-    def __init__(self, type: PacketType, data: bytes):
+    def __init__(self, type_: PacketType, data: bytes):
         super().__init__(data)
-        self.type = type
+        self.type = type_
 
     @classmethod
     async def from_stream(cls,
         reader: Callable[[int], Awaitable[bytes]],
     ):
         """Construct packet from the stream."""
-        type = PacketType(struct.unpack("B", await reader(1))[0])
-        packet = PacketV1Registery.get_packet_cls(type)
+        type_ = PacketType(struct.unpack("B", await reader(1))[0])
+        packet = PacketV1Registery.get_packet_cls(type_)
         return await packet.from_stream(reader)
 
     def to_stream(self) -> bytes:
@@ -65,9 +65,9 @@ class PacketV1(Packet):
             raise ValueError(msg)
 
         version = super().to_stream()
-        kind = struct.pack("B", self.type)
+        type_ = struct.pack("B", self.type)
         length = struct.pack("H", len(self.data))
-        return version + kind + length + self.data
+        return version + type_ + length + self.data
 
     @cached_property
     def data_size_limit(self) -> int:
@@ -100,8 +100,8 @@ class PacketV1Registery:
             msg = f"{handler.__name__} must be subclass of `PacketV1`"
             raise ValueError(msg)
 
-        type = handler.packet_type()
-        if cls._handlers.get(type) is not None:
+        type_ = handler.packet_type()
+        if cls._handlers.get(type_) is not None:
             msg = f"{handler.__name__} is already registered"
             raise ValueError(msg)
 
@@ -120,9 +120,9 @@ class PacketV1Registery:
         return handler
 
     @classmethod
-    def get_packet_cls(cls, type: PacketType) -> Type[PacketV1]:
+    def get_packet_cls(cls, type_: PacketType) -> Type[PacketV1]:
         """Get packet class for the packet version."""
-        return cls._handlers[type]
+        return cls._handlers[type_]
 
     @classmethod
     def registered_versions(cls) -> Tuple[PacketType, ...]:
@@ -139,9 +139,9 @@ class ExitPacket(PacketV1):
         return PacketType.EXIT
 
     @classmethod
-    def create(cls, reason: str):
+    def create(cls, reason: str): # pylint: disable=arguments-differ
         return cls(
-            type=cls.packet_type(),
+            type_=cls.packet_type(),
             data=reason.encode(encoding="utf-8"),
         )
 

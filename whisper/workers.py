@@ -5,7 +5,8 @@ This module provides coroutines for client and server.
 import asyncio
 from typing import Awaitable, Callable, Iterable, NoReturn, Sequence, Tuple
 
-from whisper.core.packet import Packet, PacketKind # TODO - wrong imports
+from whisper.core.packet import Packet
+from whisper.core.packet.v1 import PacketType
 from whisper.core.server.client import ConnHandle
 from whisper.utils.coro import handle_cancellation
 
@@ -35,7 +36,7 @@ async def packet_writer(
 @handle_cancellation("PacketHandler")
 async def packet_handler(
     queue: asyncio.Queue[Packet],
-    handler: Callable[[PacketKind], Callable[[bytes], None]],
+    handler: Callable[[PacketType], Callable[[bytes], None]],
 ) -> NoReturn:
     """Handles the packet from queue (for client)."""
     while True:
@@ -84,7 +85,7 @@ async def packet_dispatcher(
     recvq: asyncio.Queue[Tuple[Packet, ConnHandle]],
     sendq: asyncio.Queue[Tuple[Packet, Iterable[ConnHandle]]],
     handler: Callable[
-        [PacketKind, Tuple[ConnHandle]],
+        [PacketType, Tuple[ConnHandle]],
         Callable[
             [bytes, ConnHandle],
             Sequence[Tuple[Packet, Iterable[ConnHandle]]] | None

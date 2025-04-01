@@ -43,6 +43,8 @@ class App(Client, MainWindow):
         """
         self.on_window_exit(self.shutdown)
         self.setup_root()
+        self.title("Whisper")
+        self.minsize(200, 200)
 
     def setup_root(self):
         """Setups the root widget of the window and its children."""
@@ -89,6 +91,13 @@ class App(Client, MainWindow):
         else:
             logger.warning(f"{self.thread.name} is already running!")
 
+    async def main(self):
+        """Backend lifecycle."""
+        self.open_connection()
+        await self.execute()
+        self.close_connection()
+        logger.debug("Disconnected!")
+
     def shutdown(self):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
@@ -98,3 +107,14 @@ class App(Client, MainWindow):
             self.thread.join()
             logger.debug(f"{self.thread.name} ended!")
         MainWindow.quit(self)
+
+    def init_connection(self):
+        """Opens a dialogue box for required details."""
+
+        def initialize():
+            pass
+
+        # TODO
+        # form = ConnInitForm(self)
+        # form.on_submit(initialize)
+        # self.open_dialog(form)

@@ -33,25 +33,25 @@ class EventLoop:
         return asyncio.create_task(task)
 
     async def keep_running(self):
-        """This keeps the eventloop running until it is stopped."""
+        """This blocks the thread and waits for special task to finish."""
         await asyncio.wrap_future(self._stop_fut)
 
     def stop_running(self):
-        """Stops the running execution of running tasks in eventloop."""
+        """This unblocks the thread by setting result of special task."""
         try:
             self._stop_fut.set_result(None)
         except InvalidStateError:
             pass
 
-    async def process_tasks(self
+    async def execute(self
     ) -> List[Future[Coroutine[Any, Any, Any] | BaseException]]:
-        """Process the coroutines and tasks."""
-        running_tasks = [self.create_task(task) for task in self.get_tasks()]
+        """This executes tasks and blocks the thread until stopped explicitly."""
+        running_tasks = [self.create_task(task) for task in self.initial_tasks()]
         await self.keep_running()
         for task in running_tasks:
             task.cancel()
         return await asyncio.gather(*running_tasks, return_exceptions=True)
 
-    def get_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
-        """Provides the set of tasks to start with."""
+    def initial_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
+        """Provides a set of initial tasks."""
         return set()

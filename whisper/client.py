@@ -9,6 +9,7 @@ import logging
 from typing import Tuple
 
 from whisper.core.packet import Packet
+from whisper.core.packet.v1 import InitPacket
 from whisper.core.client import BaseClient, ClientConn
 from whisper.core.eventloop import EventLoop
 from whisper.workers import packet_reader, packet_writer
@@ -45,7 +46,7 @@ class Client(BaseClient, EventLoop):
 
     @cached_property
     def recvq(self) -> asyncio.Queue[Packet]:
-        """Packetreceived from server."""
+        """Packet received from server."""
         return asyncio.Queue()
 
     @cached_property
@@ -54,30 +55,26 @@ class Client(BaseClient, EventLoop):
         return asyncio.Queue()
 
     def server_address(self) -> Tuple[str, int]:
-        """Provides remote server address."""
+        """Provides remote server address depending upon the connection."""
+        if self.is_connected:
+            return BaseClient.server_address(self)
         return self.setting("host"), self.setting("port")
 
-    def open_connection(self): # pylint: disable=arguments-differ
+    def open_connection(self):
         """Connect to remote server."""
         host, port = self.server_address()
         logger.debug(f"Connecting to {(host, port)} ...")
         BaseClient.open_connection(self, host, port)
         logger.debug(f"Connection established with {(host, port)}!")
 
-    async def main(self):
-        """
-        This defines the entry point of backend. It determines the
-        different stges in backend.
-        """
-        self.open_connection()
-        await self.process_tasks()
-        self.close_connection()
-        logger.debug("Disconnected!")
-
     def shutdown(self):
-        """Close the application backend."""
+        """This marks the closing of running tasks and connection close."""
         self.stop_running()
 
-    def get_tasks(self):
-        """Initial tasks."""
-        return super().get_tasks() | {self.reader, self.writer}
+    def initial_tasks(self):
+        return super().initial_tasks() | {self.reader, self.writer}
+
+    def init_connection(self, username: str):
+        """This initialises the client on server side."""
+        packet = InitPacket.create(username=username)
+        self.schedule(self.sendq.put(packet))

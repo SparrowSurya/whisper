@@ -73,7 +73,7 @@ class Server(BaseServer, EventLoop):
     async def start(self, host: str, port: int):
         """Start the server."""
         self.start_server(host, port)
-        await self.process_tasks()
+        await self.execute()
         self.stop_server()
 
     async def serve(self, conn: ConnHandle):
@@ -87,6 +87,6 @@ class Server(BaseServer, EventLoop):
         )
         self.clients.remove(conn)
 
-    def get_tasks(self):
+    def initial_tasks(self):
         """Initial tasks."""
-        return super().get_tasks() | {self.acceptor, self.writer}
+        return super().initial_tasks() | {self.acceptor, self.writer}

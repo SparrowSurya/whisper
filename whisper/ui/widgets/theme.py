@@ -1,0 +1,130 @@
+"""
+This module provides objects for storing themes and color palettes. It provides a mixin
+class which can use the theme data and with its preferred palette attributes to
+themeify tkinter widget.
+
+
+classes
+-------
+* Palette - stores color information
+* Theme - stores overall theme data
+* ThemedTkWidgetMixin - mixin class to transform tkinter widget to preferred theme.
+"""
+
+import tkinter as tk
+import tkinter.font as tkfont
+from dataclasses import dataclass
+from typing import Dict
+
+from .typing import PaletteOpts, TkFontOpts
+
+
+__all__ = (
+    "Palette",
+    "Theme",
+    "ThemedTkWidgetMixin",
+)
+
+
+@dataclass(frozen=True)
+class Palette:
+    """Color palette for widget color attributes. Make sure that color values are
+    provided as hexadecimal values or recogonised color names.
+
+    Categories:
+    * surface: surface0, surface1, surface2
+    * text: text, subtext1, subtext2
+    * overlay: overlay0, overlay1, overlay2
+    * background: base, mantle, crust
+    * general: white, black, red, orange, yellow, green, cyan, blue, violet, magenta
+    * special: info, success, warning, danger
+    """
+
+    surface0: str
+    surface1: str
+    surface2: str
+
+    text: str
+    subtext0: str
+    subtext1: str
+
+    overlay0: str
+    overlay1: str
+    overlay2: str
+
+    base: str
+    mantle: str
+    crust: str
+
+    white: str
+    black: str
+    red: str
+    orange: str
+    yellow: str
+    green: str
+    cyan: str
+    blue: str
+    violet: str
+    magenta: str
+
+    info: str
+    success: str
+    warning: str
+    danger: str
+
+
+@dataclass(frozen=True, repr=False)
+class Theme:
+    """A Theme data object."""
+
+    name: str
+    """name of the theme"""
+
+    palette: Palette
+    """Color palette"""
+
+    font: tkfont.Font
+    """Tkinter font"""
+
+    @classmethod
+    def from_dict(cls,
+        name: str,
+        color_palette: Dict[PaletteOpts, str],
+        fontopts: TkFontOpts,
+        root: tk.Misc | None = None,
+    ):
+        """Builds theme object from objects."""
+        palette = Palette(**color_palette)
+        font = tkfont.Font(root=root, **fontopts)
+        return cls(name, palette, font)
+
+
+class ThemedTkWidgetMixin:
+    """Tkinter based mixin class to provide theme to tkinter widget.
+
+    Attributes:
+    * colorscheme
+
+    Methods:
+    * get_colorscheme
+    * set_theme
+    * configure (taken from tkinter widget)
+    """
+
+    colorscheme: Dict[str, PaletteOpts] = {}
+    """Mapping from tkinter attribute to palette attributes."""
+
+    def get_colorscheme(self) -> Dict[str, PaletteOpts]:
+        """Provides the colorscheme information."""
+        return self.colorscheme
+
+    def set_theme(self, theme: Theme):
+        """Sets the theme on the widget."""
+        scheme = self.get_colorscheme()
+        data = {attr: theme.scheme[value] for attr, value in scheme.items()}
+        self.configure(**data)
+
+    def configure(self, *args, **kwargs):
+        """This must be provided by the tkinter widget."""
+        cls = type(self).__name__
+        raise RuntimeError(f"{cls} class must be used with tkinter widget.")

@@ -5,7 +5,7 @@ This module provides custom container widget.
 import tkinter as tk
 
 from .custom import CustomWidget
-from .typing import TkReliefOpts
+from .typing import TkCursor, TkReliefOpts, TkScreenUnits
 
 
 class Container(tk.Frame, CustomWidget):
@@ -14,15 +14,15 @@ class Container(tk.Frame, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        border: int = 0,
-        borderwidth: int = 0,
-        cursor: str = "",
-        height: int = 0,
-        highlightthickness: int = 0,
-        padx: int = 0,
-        pady: int = 0,
+        border: TkScreenUnits = 0,
+        borderwidth: TkScreenUnits = 0,
+        cursor: TkCursor = "",
+        height: TkScreenUnits = 0,
+        highlightthickness: TkScreenUnits = 0,
+        padx: TkScreenUnits = 0,
+        pady: TkScreenUnits = 0,
         relief: TkReliefOpts = "flat",
-        width: int = 0,
+        width: TkScreenUnits = 0,
     ):
         tk.Frame.__init__(self, master=master, border=border, borderwidth=borderwidth,
             cursor=cursor, height=height, highlightthickness=highlightthickness,

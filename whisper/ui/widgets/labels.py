@@ -3,9 +3,11 @@ This module provides custom label widget.
 """
 
 import tkinter as tk
+from typing import Any
 
 from .custom import CustomWidget
-from .typing import TkJustifyOpts, TkReliefOpts, TkPosOpts
+from .typing import (TkJustifyOpts, TkReliefOpts, TkPosOpts, TkScreenUnits,
+    TkCursor, TkNone)
 
 
 class Label(tk.Label, CustomWidget):
@@ -14,21 +16,21 @@ class Label(tk.Label, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        bitmap: str = "",
-        border: int = 0,
-        borderwidth: int = 0,
-        cursor: str = "",
-        height: int = 0,
-        highlightthickness: int = 0,
-        image: tk.PhotoImage | None = None,
+        bitmap: tk.BitmapImage | TkNone = "",
+        border: TkScreenUnits = 0,
+        borderwidth: TkScreenUnits = 0,
+        cursor: TkCursor = "",
+        height: TkScreenUnits = 0,
+        highlightthickness: TkScreenUnits = 0,
+        image: tk.PhotoImage | TkNone = "",
         justify: TkJustifyOpts = "center",
         position: TkPosOpts = "none",
-        padx: int = 0,
-        pady: int = 0,
+        padx: TkScreenUnits = 0,
+        pady: TkScreenUnits = 0,
         relief: TkReliefOpts = "flat",
-        text: str = "",
-        width: int = 0,
-        variable: tk.Variable | None = None,
+        text: Any = "",
+        width: TkScreenUnits = 0,
+        variable: tk.Variable | TkNone = "",
     ):
         """Arguments:
 

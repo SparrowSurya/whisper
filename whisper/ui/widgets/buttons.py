@@ -3,9 +3,11 @@ This module provides custom button widget.
 """
 
 import tkinter as tk
+from typing import Any
 
 from .custom import CustomWidget
-from .typing import TkBtnCmd, TkBtnStateOpts, TkPosOpts, TkReliefOpts
+from .typing import (TkBtnCmd, TkBtnStateOpts, TkPosOpts, TkReliefOpts, TkScreenUnits,
+    TkCursor, TkNone)
 
 
 class Button(tk.Button, CustomWidget):
@@ -14,23 +16,23 @@ class Button(tk.Button, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        bitmap: str = "",
-        border: int = 1,
-        borderwidth: int = 0,
-        command: TkBtnCmd | None = None,
-        cursor: str = "",
-        height: int = 0,
-        highlightthickness: int = 0,
-        image: tk.PhotoImage | None = None,
+        bitmap: tk.BitmapImage | TkNone = "",
+        border: TkScreenUnits = 1,
+        borderwidth: TkScreenUnits = 0,
+        command: TkBtnCmd | TkNone = "",
+        cursor: TkCursor = "",
+        height: TkScreenUnits = 0,
+        highlightthickness: TkScreenUnits = 0,
+        image: tk.PhotoImage | TkNone = "",
         position: TkPosOpts = "none",
-        padx: int = 0,
-        pady: int = 0,
+        padx: TkScreenUnits = 0,
+        pady: TkScreenUnits = 0,
         relief: TkReliefOpts = "raised",
         state: TkBtnStateOpts = "normal",
-        text: str = "",
-        variable: tk.Variable | None = None,
-        width: int = 0,
-        wraplength: int = 0,
+        text: Any = "",
+        variable: tk.Variable | TkNone = "",
+        width: TkScreenUnits = 0,
+        wraplength: TkScreenUnits = 0,
     ):
         """Arguments:
 

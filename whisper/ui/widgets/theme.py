@@ -118,13 +118,28 @@ class ThemedTkWidgetMixin:
         """Provides the colorscheme information."""
         return self.colorscheme
 
-    def set_theme(self, theme: Theme):
+    def set_theme_self(self, theme: Theme):
         """Sets the theme on the widget."""
         scheme = self.get_colorscheme()
         data = {attr: theme.scheme[value] for attr, value in scheme.items()}
         self.configure(**data)
 
+    def set_theme_child(self, theme: Theme):
+        """Sets theme on child widgets."""
+        for child in self.winfo_children():
+            child.set_theme(theme)
+
+    def set_theme(self, theme: Theme):
+        """Sets theme on itself and children."""
+        self.set_theme_self(theme)
+        self.set_theme_child(theme)
+
     def configure(self, *args, **kwargs):
+        """This must be provided by the tkinter widget."""
+        cls = type(self).__name__
+        raise RuntimeError(f"{cls} class must be used with tkinter widget.")
+
+    def winfo_children(self):
         """This must be provided by the tkinter widget."""
         cls = type(self).__name__
         raise RuntimeError(f"{cls} class must be used with tkinter widget.")

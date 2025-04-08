@@ -1,5 +1,5 @@
 """
-This modules provides various types used in the widget modules.
+This modules provides various types used in ui  module.
 """
 
 from typing import Union, Callable, Literal, TypedDict

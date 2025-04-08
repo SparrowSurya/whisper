@@ -1,20 +1,25 @@
 """
-This module provides the event binding object for frontend.
+This module contains special utility variables, functions and classes.
+
+### Variable
+* NO_DATA - represents absence of data.
+
+### Functions
+
+### Classes
+* Binding - tkinter widget event binding.
 """
 
-import logging
 import tkinter as tk
 from typing import Callable, Any
 
-
-logger = logging.getLogger(__name__)
 
 
 NO_DATA = object()
 
 
 class Binding:
-    """A bind object manages tkinter widget's event binding."""
+    """Manages tkinter widget's event binding."""
 
     def __init__(self,
         widget: tk.Widget,
@@ -42,9 +47,6 @@ class Binding:
         """Binds the sequence to the widget."""
         if self._id is None:
             self._id = self.widget.bind(self.seq, self.callback, "+")
-            logger.debug(f"Binded {self.seq} to {self.cb.__name__}")
-        else:
-            logger.warning(f"{self.widget} is already binded on {self.seq}")
 
     def unbind(self):
         """Unbind the widget with sequence."""
@@ -52,19 +54,12 @@ class Binding:
             self.widget.unbind(self.seq, self._id)
             self._id = None
 
-    def callback(self, event: tk.Event | None = None):
-        """Configured callback."""
-        logger.debug(f"Invoking callback for {self.widget} on {self.seq}")
-
-        if not callable(self.cb):
-            logger.warning(f"Callback not callable for {self.widget} on {self.seq}")
-            return
-
+    def call(self, event: tk.Event | None = None):
+        """Invokes event callback."""
         try:
             self.cb(event, self.data)
         except tk.TclError:
-            msg = f"Failed to call {self.cb.__name__} for {self.widget} on {self.seq}"
-            logger.exception(msg)
+            pass
 
     def __del__(self):
         """Cleanup the binding."""

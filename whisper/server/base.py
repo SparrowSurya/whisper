@@ -1,36 +1,28 @@
 """
-This module provides the basic server functionality to manage clients
-and communication.
+This module provides the basic server functionality to manage clients and communication.
 """
 
 import asyncio
 
-from whisper.core.packet import Packet
-from .connection import ServerConn
-from .client import ConnHandle
+from whisper.packet import Packet
+from whisper.server.tcp import TcpServer
+from whisper.server.connection import ConnHandle
 
 
 class BaseServer:
-    """
-    Base server class for communicating with clients. It provides
-    asynchronous methods for reading, writing and accepting.
-    """
+    """Base server class for communicating with clients. It provides asynchronous
+    methods for reading, writing and accepting."""
 
-    def __init__(self, conn: ServerConn | None = None):
+    def __init__(self, conn: TcpServer | None = None):
         """Initialise connection."""
-        self.connection = conn or ServerConn()
+        self.connection = conn or TcpServer()
 
-    async def accept(self,
-        loop: asyncio.AbstractEventLoop,
-    ) -> ConnHandle:
+    async def accept(self, loop: asyncio.AbstractEventLoop) -> ConnHandle:
         """Accept incoming client connections."""
         sock, address = await self.connection.accept(loop)
         return ConnHandle(sock, address) # type: ignore
 
-    async def read(self,
-        conn: ConnHandle,
-        loop: asyncio.AbstractEventLoop,
-    ) -> Packet:
+    async def read(self, conn: ConnHandle, loop: asyncio.AbstractEventLoop) -> Packet:
         """Read `n` bytes from connection."""
         reader = lambda n: self.connection.read(conn.sock, n, loop)  # noqa: E731
         return await Packet.from_stream(reader)

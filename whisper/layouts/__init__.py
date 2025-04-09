@@ -1,3 +1,3 @@
 """
-This module contains various layouts for the app.
+This module contains layouts.
 """

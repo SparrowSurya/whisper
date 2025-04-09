@@ -7,29 +7,23 @@ from functools import cached_property
 import logging
 from typing import Iterable, Set, Tuple
 
-from whisper.core.server import BaseServer, ServerConn
-from whisper.core.eventloop import EventLoop
-from whisper.workers import (
-    connection_acceptor, connection_reader,
-    connection_writer, packet_dispatcher
-)
-from .core.server.client import ConnHandle
-from .core.packet import Packet
+from whisper.eventloop import EventLoop
+from whisper.packet import Packet
+from whisper.server.base import BaseServer
+from whisper.server.connection import ConnHandle
+from whisper.server.tcp import  TcpServer
+from whisper.server.workers import (connection_acceptor, connection_reader,
+    connection_writer, packet_dispatcher)
 
 
 logger = logging.getLogger(__name__)
 
 
 class Server(BaseServer, EventLoop):
-    """
-    This class provides asynchronouse server backend for the chat
-    applications.
-    """
+    """This class provides asynchronouse server backend for the chat applications."""
 
-    def __init__(self, conn: ServerConn | None = None):
-        """
-        The connection object is used to accept client connections.
-        """
+    def __init__(self, conn: TcpServer | None = None):
+        """The connection object is used to accept client connections."""
         BaseServer.__init__(self, conn)
         EventLoop.__init__(self)
 

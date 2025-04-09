@@ -1,5 +1,5 @@
 """
-This module provides connection class for client.
+This module provides tcp connection object for client.
 """
 
 import socket
@@ -7,22 +7,23 @@ import asyncio
 from typing import Tuple
 
 
-class ClientConn:
+class TcpClient:
     """
-    A TCP oriented asynchronous client connection. It uses `asyncio`
-    event loop to performs read and write operations on socket.
+    A TCP oriented asynchronous client connection. It uses `asyncio` event loop to
+    perform read and write operations on socket. It abstracts all the lower level
+    non blocking socket io implementations.
     """
 
     def __init__(self):
-        """Initialize TCP socket."""
+        """Initialize TCP non-blocking socket."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def address(self) -> Tuple[str, int]:
         """
-        Provides client address as tuple of hostname and port address.
-        Make sure that client is connected before calling it.
+        Provides client address as tuple of hostname and port address. Make sure that
+        client is connected before calling it.
         """
         return self.sock.getsockname()
 
@@ -38,16 +39,10 @@ class ClientConn:
         """Closes the socket connection."""
         self.sock.close()
 
-    async def read(self,
-        n: int,
-        loop: asyncio.AbstractEventLoop,
-    ) -> bytes:
+    async def read(self, n: int, loop: asyncio.AbstractEventLoop) -> bytes:
         """Read `n` bytes of data from socket."""
         return await loop.sock_recv(self.sock, n)
 
-    async def write(self,
-        data: bytes,
-        loop: asyncio.AbstractEventLoop,
-    ) -> None:
+    async def write(self, data: bytes, loop: asyncio.AbstractEventLoop) -> None:
         """Write data to the socket."""
         return await loop.sock_sendall(self.sock, data)

@@ -2,7 +2,7 @@
 This module contains the root widget of the app (after MainWindow).
 """
 
-from whisper.ui.widgets import Container
+from whisper.ui.container import Container
 
 
 class Root(Container):

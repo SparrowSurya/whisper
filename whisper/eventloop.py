@@ -1,6 +1,6 @@
 """
-This module contains the mechanism for communicating and action on the
-response sent by the server.
+This module contains the mechanism for communicating and action on the response sent
+by the server.
 """
 
 import asyncio
@@ -9,10 +9,8 @@ from typing import Coroutine, List, Set, Any
 
 
 class EventLoop:
-    """
-    The class provides the asynchronous eventloop using `asyncio`. It
-    provides mthods to control the running eventloop.
-    """
+    """The class provides the asynchronous eventloop using `asyncio`. It provides
+    methods to control the running eventloop."""
 
     def __init__(self):
         self._stop_fut = Future()
@@ -26,9 +24,7 @@ class EventLoop:
         """Schedules a coroutine (threadsafe) into event loop."""
         return asyncio.run_coroutine_threadsafe(coro, self.loop)
 
-    def create_task(self,
-        task: Coroutine[Any, Any, Any],
-    ) -> asyncio.Task[Any]:
+    def create_task(self, task: Coroutine[Any, Any, Any]) -> asyncio.Task[Any]:
         """Provides a task (not threadsafe) object."""
         return asyncio.create_task(task)
 
@@ -43,8 +39,7 @@ class EventLoop:
         except InvalidStateError:
             pass
 
-    async def execute(self
-    ) -> List[Future[Coroutine[Any, Any, Any] | BaseException]]:
+    async def execute(self) -> List[Future[Coroutine[Any, Any, Any] | BaseException]]:
         """This executes tasks and blocks the thread until stopped explicitly."""
         running_tasks = [self.create_task(task) for task in self.initial_tasks()]
         await self.keep_running()

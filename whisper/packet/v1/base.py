@@ -1,6 +1,6 @@
 """
-This modules provides the `PacketV1` abstract class, `PacketType` and
-its registery class.
+This modules provides the `PacketV1` abstract class, `PacketType` and its registery
+object.
 """
 
 import abc
@@ -9,7 +9,7 @@ from enum import IntEnum, auto
 from functools import cached_property
 from typing import Awaitable, Callable, Dict, Tuple, Type
 
-from whisper.core.packet import Packet, PacketRegistery
+from whisper.packet import Packet, PacketRegistery
 
 
 __all__ = (
@@ -29,9 +29,8 @@ class PacketType(IntEnum):
 
 @PacketRegistery.register
 class PacketV1(Packet):
-    """
-    Abstract PacketV1 packet structure. This class provides base for
-    all kinds of child packet implementation belongs to version 1.
+    """Abstract PacketV1 packet structure. This class provides base for all kinds of
+    child packet implementation belongs to version 1.
 
     Structure:
     ```
@@ -54,9 +53,7 @@ class PacketV1(Packet):
         self.type = type_
 
     @classmethod
-    async def from_stream(cls,
-        reader: Callable[[int], Awaitable[bytes]],
-    ):
+    async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
         """Construct packet from the stream."""
         type_ = PacketType(struct.unpack("B", await reader(1))[0])
         packet = PacketV1Registery.get_packet_cls(type_)
@@ -85,18 +82,12 @@ class PacketV1(Packet):
     @classmethod
     @abc.abstractmethod
     def packet_type(cls) -> PacketType:
-        """
-        Child class must implement this to define the type they handle.
-        """
+        """Child class must implement this to define the type they handle."""
 
 
 class PacketV1Registery:
-    """
-    Manages the packet handler for each `PacketType` and their
-    respective handlers.
-
-    Use the class directly instead creating an instance.
-    """
+    """Manages the packet handler for each `PacketType` and their respective handlers.
+    Use the class directly instead creating an instance."""
 
     _handlers: Dict[PacketType, Type[PacketV1]] = {}
     """Maps packet type against their handlers."""
@@ -115,8 +106,7 @@ class PacketV1Registery:
 
     @classmethod
     def register(cls, handler: Type[PacketV1]) -> Type[PacketV1]:
-        """
-        Use this as decorator to register a packet type handler.
+        """Use this as decorator to register a packet type handler.
 
         Usage:
         >>> @PacketV1Registery.register(PacketType)

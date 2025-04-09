@@ -1,5 +1,5 @@
 """
-The module contains the main application class.
+The module contains the client application object.
 """
 
 import asyncio
@@ -7,11 +7,11 @@ import logging
 import threading
 from typing import Self
 
-from whisper.core.client import ClientConn
-from whisper.settings import ClientSetting
-from .ui import MainWindow
-from .ui.layouts.root import Root
-from .client import Client
+from whisper.client.backend import Client
+from whisper.client.settings import ClientSetting
+from whisper.client.tcp import TcpClient
+from whisper.ui.window import MainWindow
+from whisper.layouts.root import Root
 
 
 logger = logging.getLogger(__name__)
@@ -21,29 +21,28 @@ class App(Client, MainWindow):
     """Main application (Frontend + Backend).
 
     Frontend is synchronous and is running on `MainThread` while the backend is
-    àsynchronous and is running on `BackendThread`.
+    asynchronous and is running on `BackendThread`.
 
     Use `mainloop` to run the application.
     """
 
     def __init__(self,
+        title: str,
         setting: ClientSetting | None = None,
-        conn: ClientConn | None = None,
+        conn: TcpClient | None = None,
     ):
         """The `conn` object is used to connect with the servers."""
         Client.__init__(self, setting=setting, conn=conn)
         MainWindow.__init__(self)
-        self.configure_app()
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
+        self.title(title)
+        self.configure_app()
 
     def configure_app(self):
-        """
-        Configure the application settings. Use this to setup custom
-        configuration.
-        """
+        """Configure the application settings. Use this to setup custom
+        configuration."""
         self.on_window_exit(self.shutdown)
         self.setup_root()
-        self.title("Whisper")
         self.minsize(200, 200)
 
     def setup_root(self):
@@ -69,14 +68,11 @@ class App(Client, MainWindow):
         finally:
             self.shutdown()
 
-    def _run_backend(self):
+    def _run_backend(self): # TODO - error handler
         """Starts the backend.
 
         NOTE: This should be running inside `App.thread`.
         """
-        # TODO - it would be better if the error is handelled withn
-        # eventloop so that there would be better control over running
-        # eventloop
         try:
             asyncio.run(self.main())
         except BaseException as ex:
@@ -87,34 +83,22 @@ class App(Client, MainWindow):
         """Starts the backend thread."""
         if not self.thread.is_alive():
             self.thread.start()
-            logger.info(f"{self.thread.name} is running!")
-        else:
-            logger.warning(f"{self.thread.name} is already running!")
 
     async def main(self):
         """Backend lifecycle."""
         self.open_connection()
         await self.execute()
         self.close_connection()
-        logger.debug("Disconnected!")
 
     def shutdown(self):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
-            logger.debug("Shutting down backend")
             Client.shutdown(self)
-            logger.debug(f"{self.thread.name} joining ...")
             self.thread.join()
-            logger.debug(f"{self.thread.name} ended!")
         MainWindow.quit(self)
 
-    def init_connection(self):
+    def init_connection(self): # TODO
         """Opens a dialogue box for required details."""
-
-        def initialize():
-            pass
-
-        # TODO
         # form = ConnInitForm(self)
-        # form.on_submit(initialize)
-        # self.open_dialog(form)
+        # callback = lambda **kw: Client.init_connection(self, **kw)  # noqa: E731
+        # form.on_submit(callback)

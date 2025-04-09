@@ -6,7 +6,7 @@ This module provides `InitPacket` implementation for `PacketV1`.
 import struct
 from typing import Any, Dict, Awaitable, Callable
 
-from whisper.core.codec import json_decode, json_encode
+from whisper.codec import json_decode, json_encode
 from .base import PacketType, PacketV1, PacketV1Registery
 
 

@@ -19,3 +19,9 @@ class Env(StrEnum):
 
 
 ENV = Env(os.environ.get("WHISPER_ENV", "dev"))
+
+LOGGING_FORMAT_STYLE = "{"
+LOGFILE = str(pathlib.Path("logs", f"{APP_NAME}.log"))
+
+# make sure above file exists
+os.makedirs(os.path.dirname(LOGFILE), exist_ok=True)

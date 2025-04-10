@@ -3,7 +3,6 @@ The module contains the client application object.
 """
 
 import asyncio
-import logging
 import threading
 from typing import Self
 
@@ -12,9 +11,7 @@ from whisper.client.settings import ClientSetting
 from whisper.client.tcp import TcpClient
 from whisper.ui.window import MainWindow
 from whisper.layouts.root import Root
-
-
-logger = logging.getLogger(__name__)
+from whisper.logger import Logger
 
 
 class App(Client, MainWindow):
@@ -28,11 +25,12 @@ class App(Client, MainWindow):
 
     def __init__(self,
         title: str,
+        logger: Logger,
         setting: ClientSetting | None = None,
         conn: TcpClient | None = None,
     ):
         """The `conn` object is used to connect with the servers."""
-        Client.__init__(self, setting=setting, conn=conn)
+        Client.__init__(self, logger=logger, setting=setting, conn=conn)
         MainWindow.__init__(self)
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
         self.title(title)
@@ -57,32 +55,31 @@ class App(Client, MainWindow):
 
     def mainloop(self, n: int = 0):
         """Starts the application."""
-        # TODO - since error occurs here the application will close
-        # But do not close the mainloop until backend shuts down
         try:
             MainWindow.mainloop(self, n)
         except KeyboardInterrupt:
-            logger.info("Force closing the app! (KeyboardInterrput)")
+            self.logger.info("keyboard interrupt")
         except Exception as ex:
-            logger.exception(f"App.mainloop: {ex}")
+            self.logger.exception(str(ex))
         finally:
             self.shutdown()
 
     def _run_backend(self): # TODO - error handler
-        """Starts the backend.
-
-        NOTE: This should be running inside `App.thread`.
-        """
+        """Starts the backend. This should be running inside `App.thread`."""
         try:
             asyncio.run(self.main())
         except BaseException as ex:
-            logger.exception(f"App.run: {ex}")
+            self.logger.exception(str(ex))
             self.shutdown()
 
     def run(self):
         """Starts the backend thread."""
+        tname = self.thread.name
         if not self.thread.is_alive():
             self.thread.start()
+            self.logger.info(f"thread {tname} started")
+        else:
+            self.logger.warning(f"thread {tname} is already running")
 
     async def main(self):
         """Backend lifecycle."""
@@ -95,7 +92,9 @@ class App(Client, MainWindow):
         if self.thread.is_alive():
             Client.shutdown(self)
             self.thread.join()
+            self.logger.info(f"thread {self.thread.name} joined")
         MainWindow.quit(self)
+        self.logger.info("mainloop exited")
 
     def init_connection(self): # TODO
         """Opens a dialogue box for required details."""

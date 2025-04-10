@@ -14,6 +14,7 @@ from whisper.client.workers import packet_reader, packet_writer
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.packet.v1 import InitPacket
+from whisper.logger import Logger
 
 
 class Client(BaseClient, EventLoop):
@@ -22,12 +23,14 @@ class Client(BaseClient, EventLoop):
     """
 
     def __init__(self,
+        logger: Logger,
         setting: ClientSetting | None = None,
         conn: TcpClient | None = None,
     ):
         """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, conn)
         EventLoop.__init__(self)
+        self.logger = logger
         self.setting = setting or ClientSetting.defaults()
 
         self.reader = packet_reader(
@@ -58,10 +61,17 @@ class Client(BaseClient, EventLoop):
     def open_connection(self):
         """Connect to remote server."""
         host, port = self.server_address()
+        self.logger.debug(f"connecting to {(host, port)}")
         BaseClient.open_connection(self, host, port)
+        self.logger.info("connectiion established")
+
+    def close_connection(self):
+        super().close_connection()
+        self.logger.info("connection closed")
 
     def shutdown(self):
         """This marks the closing of running tasks and connection close."""
+        self.logger.info("shutting down event loop")
         self.stop_running()
 
     def initial_tasks(self):

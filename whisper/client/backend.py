@@ -10,7 +10,7 @@ from typing import Tuple
 from whisper.client.base import BaseClient
 from whisper.client.settings import ClientSetting
 from whisper.client.tcp import TcpClient
-from whisper.client.workers import packet_reader, packet_writer
+from whisper.client.workers import PacketReader, PacketWriter
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.packet.v1 import InitPacket
@@ -33,14 +33,8 @@ class Client(BaseClient, EventLoop):
         self.logger = logger
         self.setting = setting or ClientSetting.defaults()
 
-        self.reader = packet_reader(
-            queue=self.recvq,
-            reader=lambda: self.read(self.loop),
-        )
-        self.writer = packet_writer(
-            queue=self.sendq,
-            writer=lambda p: self.write(p, self.loop),
-        )
+        self.reader = PacketReader(logger=self.logger)
+        self.writer = PacketWriter(logger=self.logger)
 
     @cached_property
     def recvq(self) -> asyncio.Queue[Packet]:
@@ -75,7 +69,16 @@ class Client(BaseClient, EventLoop):
         self.stop_running()
 
     def initial_tasks(self):
-        return super().initial_tasks() | {self.reader, self.writer}
+        return super().initial_tasks() | {
+            self.reader(
+                queue=self.recvq,
+                reader=lambda: self.read(self.loop),
+            ),
+            self.writer(
+                queue=self.sendq,
+                writer=lambda p: self.write(p, self.loop),
+            )
+        }
 
     def init_connection(self, username: str):
         """This initialises the client on server side."""

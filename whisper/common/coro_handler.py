@@ -4,6 +4,7 @@ This module provides utility for coroutines.
 
 import asyncio
 import logging
+import functools
 from typing import Any, Callable, NoReturn, Awaitable
 
 
@@ -14,6 +15,7 @@ def handle_cancellation(name: str):
     """Provide error handelling for coroutines."""
 
     def wrapper(func: Callable[[], Awaitable[NoReturn]]):
+        @functools.wraps(func)
         async def inner(*args: Any, **kwargs: Any):
             try:
                 logger.debug(f"{name} running")

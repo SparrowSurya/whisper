@@ -56,12 +56,10 @@ class App(Client, MainWindow):
     def mainloop(self, n: int = 0):
         """Starts the application."""
         try:
+            self.logger.info("running mainloop")
             MainWindow.mainloop(self, n)
-        except KeyboardInterrupt:
-            self.logger.info("keyboard interrupt")
-        except Exception as ex:
+        except BaseException as ex:
             self.logger.exception(str(ex))
-        finally:
             self.shutdown()
 
     def _run_backend(self): # TODO - error handler

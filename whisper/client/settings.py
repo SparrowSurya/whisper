@@ -30,9 +30,9 @@ class ClientSetting:
     """User data."""
 
     @classmethod
-    def defaults(cls):
+    def defaults(cls, **kwargs):
         """Use default values."""
-        return cls(ClientConfig())
+        return cls(ClientConfig(**kwargs))
 
     def get(self, key: str) -> Any:
         """Get the configuration value."""

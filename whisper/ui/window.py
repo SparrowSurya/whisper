@@ -5,9 +5,10 @@ This module provide custom tkinter window and toplevel window.
 import tkinter as tk
 from typing import Callable
 
+from whisper.ui.theme import Palette
+from whisper.ui.typing import PaletteOpts
 from .custom import CustomWidget
 from .utils import Binding
-
 
 
 class MainWindow(tk.Tk, CustomWidget):
@@ -19,7 +20,7 @@ class MainWindow(tk.Tk, CustomWidget):
     def __init__(self):
         tk.Tk.__init__(self)
         CustomWidget.__init__(self)
-        self.exit_event = Binding(self, self.WINDOW_EXIT, self.exit_window)
+        self.exit_event = Binding(self, self.WINDOW_EXIT_EVENT, self.quit)
         self.on_window_exit(self.quit)
 
     def on_window_exit(self, callback: Callable[[], None]):
@@ -29,11 +30,20 @@ class MainWindow(tk.Tk, CustomWidget):
 
     def mainloop(self, n: int = 0):
         """Start mainloop of the tkinter window."""
-        super().mainloop(n)
+        tk.Tk.mainloop(self, n)
 
     def quit(self):
         """Exit the window wihtout invoking the `on_window_exit` callback."""
-        super().destroy()
+        tk.Tk.destroy(self)
+
+    def set_palette(self, palette: Palette):
+        """Sets tkinter palette options."""
+        opts = self.get_palette_opts(palette)
+        tk.Tk.tk_setPalette(**opts)
+
+    def create_palette(self, palette: Palette) -> PaletteOpts:
+        """Creates tk palette options from given color palette."""
+        return {} # TODO
 
 
 class Window(tk.Toplevel, CustomWidget):
@@ -45,7 +55,7 @@ class Window(tk.Toplevel, CustomWidget):
     def __init__(self, master: tk.Misc):
         tk.Toplevel.__init__(self, master)
         CustomWidget.__init__(self)
-        self.exit_event = Binding(self, self.WINDOW_EXIT, self.exit_window)
+        self.exit_event = Binding(self, self.WINDOW_EXIT_EVENT, self.quit)
         self.on_window_exit(self.quit)
 
     def on_window_exit(self, callback: Callable[[], None]):
@@ -55,4 +65,4 @@ class Window(tk.Toplevel, CustomWidget):
 
     def quit(self):
         """Exit the window wihtout invoking the `on_window_exit` callback."""
-        super().destroy()
+        tk.Toplevel.destroy()

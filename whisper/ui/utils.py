@@ -46,12 +46,15 @@ class Binding:
     def bind(self):
         """Binds the sequence to the widget."""
         if self._id is None:
-            self._id = self.widget.bind(self.seq, self.callback, "+")
+            self._id = self.widget.bind(self.seq, self.call, "+")
 
     def unbind(self):
         """Unbind the widget with sequence."""
         if self._id is not None:
-            self.widget.unbind(self.seq, self._id)
+            try:
+                self.widget.unbind(self.seq, self._id)
+            except tk.TclError: # probably tk app destroyed
+                pass
             self._id = None
 
     def call(self, event: tk.Event | None = None):

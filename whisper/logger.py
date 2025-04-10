@@ -10,7 +10,7 @@ from whisper.settings import LOGFILE, LOGGING_FORMAT_STYLE
 
 
 simple = "{levelname}: {message}"
-column = "{levelname:<8}|{threadName:<15}|{module:<21}: {message}"
+column = "{levelname:<8} {threadName:<15} {module:<21}: {message}"
 detail = "{levelname} {asctime} {threadName} {taskName} {module}: {message}"
 
 simple_fmt = logging.Formatter(fmt=simple, style=LOGGING_FORMAT_STYLE)
@@ -23,7 +23,7 @@ stdout_handler = logging.StreamHandler(stream=sys.stdout)
 stdout_handler.setFormatter(column_fmt)
 stdout_handler.setLevel(logging.DEBUG)
 
-file_handler = logging.FileHandler(file=LOGFILE)
+file_handler = logging.FileHandler(LOGFILE)
 file_handler.setFormatter(detail_fmt)
 file_handler.setLevel(logging.DEBUG)
 
@@ -35,3 +35,13 @@ class Logger(logging.Logger):
         super().__init__(name, level)
         for handler in handlers:
             self.addHandler(handler)
+
+    def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func = None,
+        extra = None, sinfo = None,
+    ):
+        if extra is None:
+            extra = {}
+        if "taskName" not in extra:
+            extra["taskName"] = "N/A"
+        return super().makeRecord(
+            name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)

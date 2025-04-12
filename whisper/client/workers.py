@@ -1,11 +1,11 @@
 """
-This module provides coroutines for client.
+This module provides wokers for client.
 """
 
 import asyncio
 from typing import Awaitable, Callable, NoReturn
 
-from whisper.common.worker import Worker
+from whisper.worker import Worker
 from whisper.packet import Packet
 from whisper.packet.v1 import PacketType
 

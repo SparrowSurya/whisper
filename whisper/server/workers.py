@@ -5,7 +5,7 @@ This module provides coroutines for server.
 import asyncio
 from typing import Awaitable, Callable, Iterable, NoReturn, Sequence, Tuple
 
-from whisper.common.worker import Worker
+from whisper.worker import Worker
 from whisper.packet import Packet
 from whisper.packet.v1 import PacketType
 from whisper.server.connection import ConnHandle

@@ -62,6 +62,7 @@ class TkPaletteOpts(TypedDict):
     activeBackground: str
     activeForeground: str
     background: str
+    disabledBackground: str
     disabledForeground: str
     foreground: str
     highlightBackground: str

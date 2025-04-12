@@ -1,21 +1,20 @@
 """
-This module provides `ExitPacket` class.
+This module provides exit packet implementation for packet v1.
 """
 
 import struct
 from enum import IntEnum, auto
-from typing import Awaitable, Callable
 
-from .base import PacketType, PacketV1, PacketV1Registery
+from .base import PacketType, PacketV1
 
 
 class ExitReason(IntEnum):
+    """Describe the exit reason for client and server."""
 
     SELF_EXIT = auto()
     FORCE_EXIT = auto()
 
 
-@PacketV1Registery.register
 class ExitPacket(PacketV1):
 
     @classmethod
@@ -23,20 +22,14 @@ class ExitPacket(PacketV1):
         return PacketType.EXIT
 
     @classmethod
-    def create(cls, reason: str):
-        return cls(
-            type_=cls.packet_type(),
-            data=reason.encode(encoding="utf-8"),
-        )
+    def request(cls, reason: ExitReason):
+        reason = (reason & 0x0F) << 4
+        return cls.create(struct.pack("B", reason))
 
     @classmethod
-    async def from_stream(cls,
-        reader: Callable[[int], Awaitable[bytes]],
-    ):
-        length = struct.unpack("H", await reader(2))[0]
-        data = await reader(length)
-        return cls(cls.packet_type(), data)
+    def response(cls, reason: ExitReason, code: int):
+        reason = (reason & 0x0F) << 4
+        return cls.create(struct.pack("B", reason), code)
 
     def content(self) -> str:
-        """Provide the exit reason message."""
         return self.data.decode(encoding="UTF-8")

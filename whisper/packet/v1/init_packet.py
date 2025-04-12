@@ -1,16 +1,14 @@
 """
-This module provides `InitPacket` implementation for `PacketV1`.
+This module provides init packet implementation for packet v1.
 """
 
 
-import struct
-from typing import Any, Dict, Awaitable, Callable
+from typing import Any, Dict
 
 from whisper.codec import json_decode, json_encode
-from .base import PacketType, PacketV1, PacketV1Registery
+from .base import PacketType, PacketV1
 
 
-@PacketV1Registery.register
 class InitPacket(PacketV1):
 
     @classmethod
@@ -18,20 +16,13 @@ class InitPacket(PacketV1):
         return PacketType.INIT
 
     @classmethod
-    def create(cls, username: str):
-        content = { "username": username }
-        return cls(
-            type_=cls.packet_type(),
-            data=json_encode(content),
-        )
+    def request(cls, username: str, **kwargs):
+        content = { "username": username, **kwargs}
+        return cls.create(json_encode(content))
 
     @classmethod
-    async def from_stream(cls,
-        reader: Callable[[int], Awaitable[bytes]],
-    ):
-        length = struct.unpack("H", await reader(2))[0]
-        data = await reader(length)
-        return cls(cls.packet_type(), data)
+    def response(cls, code: int, **kwargs):
+        return cls.create(json_encode(kwargs), code)
 
     def content(self) -> Dict[str, Any]:
         return json_decode(self.data)

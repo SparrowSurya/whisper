@@ -7,7 +7,7 @@ import abc
 import struct
 from enum import IntEnum, auto
 from functools import cached_property
-from typing import Awaitable, Callable, Dict, Tuple, Type
+from typing import Awaitable, Callable, Any
 
 from whisper.packet import Packet, PacketRegistery
 
@@ -15,7 +15,6 @@ from whisper.packet import Packet, PacketRegistery
 __all__ = (
     "PacketType",
     "PacketV1",
-    "PacketV1Registery",
 )
 
 
@@ -29,8 +28,10 @@ class PacketType(IntEnum):
 
 @PacketRegistery.register
 class PacketV1(Packet):
-    """Abstract PacketV1 packet structure. This class provides base for all kinds of
-    child packet implementation belongs to version 1.
+    """
+    Abstract PacketV1 packet structure. This class provides base for all kinds of child
+    packet implementation belongs to version 1. It also supports status code for server
+    response.
 
     Structure:
     ```
@@ -38,9 +39,11 @@ class PacketV1(Packet):
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
     |     Version     |   PacketType    |            Data length            |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
-    |                                  Data                                 |
+    |  Code  | 0b0000 |                Data (length bytes) ...              |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
     ```
+
+    Use code value zero for request packet and non zero 4 bit int for response packet.
     """
 
     @classmethod
@@ -48,81 +51,57 @@ class PacketV1(Packet):
         """Packet version."""
         return 1
 
-    def __init__(self, type_: PacketType, data: bytes):
+    def __init__(self, type_: PacketType, data: bytes, code: int):
         super().__init__(data)
         self.type = type_
+        self.code = code
 
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
         """Construct packet from the stream."""
         type_ = PacketType(struct.unpack("B", await reader(1))[0])
-        packet = PacketV1Registery.get_packet_cls(type_)
-        return await packet.from_stream(reader)
+        length = struct.unpack("H", await reader(2))[0]
+        code = struct.unpack("B", await reader(1))[0]
+        data = await reader(length)
+        return cls(type_, data, code)
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
         size_limit = self.data_size_limit
         data_size = len(self.data)
-        if data_size < size_limit:
-            size = f"{(data_size/1024):.3}KB"
-            limit = f"{(size_limit/1024):.0}KB"
-            msg = f"Data size exceeded {size}/{limit}"
-            raise ValueError(msg)
+        if data_size > size_limit:
+            raise ValueError(
+                f"data size limit exceeded: limit={(size_limit/1024):.0}KB "
+                f"got {(data_size/1024):.2}KB"
+            )
 
         version = super().to_stream()
         type_ = struct.pack("B", self.type)
         length = struct.pack("H", len(self.data))
-        return version + type_ + length + self.data
+        code = struct.pack("B", (self.code & 0x0F) << 4)
+        return version + type_ + length + code + self.data
 
     @cached_property
     def data_size_limit(self) -> int:
         """Maximum bytes of data supported."""
-        return 0xFFFF - (8+8+16)
+        metadata = 1 + 1 + 2 + 1
+        return 0xFFFF - metadata
 
     @classmethod
     @abc.abstractmethod
     def packet_type(cls) -> PacketType:
         """Child class must implement this to define the type they handle."""
 
-
-class PacketV1Registery:
-    """Manages the packet handler for each `PacketType` and their respective handlers.
-    Use the class directly instead creating an instance."""
-
-    _handlers: Dict[PacketType, Type[PacketV1]] = {}
-    """Maps packet type against their handlers."""
+    @classmethod
+    def create(cls, data: bytes, code: int = 0):
+        return cls(type_=cls.packet_type(), data=data, code=code,)
 
     @classmethod
-    def validate(cls, handler: Type[PacketV1]):
-        """Performs validation checks on packet"""
-        if not issubclass(handler, PacketV1):
-            msg = f"{handler.__name__} must be subclass of `PacketV1`"
-            raise ValueError(msg)
-
-        type_ = handler.packet_type()
-        if cls._handlers.get(type_) is not None:
-            msg = f"{handler.__name__} is already registered"
-            raise ValueError(msg)
+    @abc.abstractmethod
+    def request(cls, *args: Any, **kwargs: Any):
+        """Create request packet."""
 
     @classmethod
-    def register(cls, handler: Type[PacketV1]) -> Type[PacketV1]:
-        """Use this as decorator to register a packet type handler.
-
-        Usage:
-        >>> @PacketV1Registery.register(PacketType)
-        >>> class MyPacket(PacketV1):
-        >>>     ...
-        """
-        cls.validate(handler)
-        cls._handlers[handler.packet_type()] = handler
-        return handler
-
-    @classmethod
-    def get_packet_cls(cls, type_: PacketType) -> Type[PacketV1]:
-        """Get packet class for the packet version."""
-        return cls._handlers[type_]
-
-    @classmethod
-    def registered_versions(cls) -> Tuple[PacketType, ...]:
-        """Provides registered packet versions."""
-        return tuple(cls._handlers.keys())
+    @abc.abstractmethod
+    def response(cls, *args: Any, **kwargs: Any):
+        """Create response packet."""

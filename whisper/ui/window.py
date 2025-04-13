@@ -40,6 +40,7 @@ class MainWindow(tk.Tk, CustomWidget):
         tk.Tk.tk_setPalette(self, **options)
 
 
+
 class Window(tk.Toplevel, CustomWidget):
     """Toplevel tkinter window which supports custom theme."""
 

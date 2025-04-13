@@ -1,5 +1,5 @@
 """
-This modules provides various types used in ui  module.
+This modules provides various types used in ui sub package.
 """
 
 from typing import Union, Callable, Literal, TypedDict
@@ -88,17 +88,17 @@ class PaletteOpts(TypedDict):
     base: str
     mantle: str
     crust: str
-    white: str
-    black: str
+    rosewater: str
+    flamingo: str
+    pink: str
+    mauve: str
     red: str
-    orange: str
+    maroon: str
+    peach: str
     yellow: str
     green: str
-    cyan: str
+    teal: str
+    sky: str
+    sapphire: str
     blue: str
-    violet: str
-    magenta: str
-    info: str
-    success: str
-    warning: str
-    danger: str
+    lavender: str

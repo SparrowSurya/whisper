@@ -10,7 +10,7 @@ from whisper.settings import LOGFILE, LOGGING_FORMAT_STYLE
 
 
 simple = "{levelname}: {message}"
-column = "{levelname:<8} {threadName:<15} {module:<21}: {message}"
+column = "{levelname:<8} {threadName:<15} {module:<12}: {message}"
 detail = "{levelname} {asctime} {threadName} {taskName} {module}: {message}"
 
 simple_fmt = logging.Formatter(fmt=simple, style=LOGGING_FORMAT_STYLE)

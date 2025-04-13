@@ -7,8 +7,9 @@ import threading
 from typing import Self
 
 from whisper.client.backend import Client
-from whisper.client.settings import ClientSetting
+from whisper.client.settings import Setting
 from whisper.client.tcp import TcpClient
+from whisper.ui.typing import PaletteOpts, TkPaletteOpts
 from whisper.ui.window import MainWindow
 from whisper.layouts.root import Root
 from whisper.logger import Logger
@@ -26,14 +27,16 @@ class App(Client, MainWindow):
     def __init__(self,
         title: str,
         logger: Logger,
-        setting: ClientSetting | None = None,
+        setting: Setting,
         conn: TcpClient | None = None,
     ):
         """The `conn` object is used to connect with the servers."""
-        Client.__init__(self, logger=logger, setting=setting, conn=conn)
         MainWindow.__init__(self)
+        self.setting = setting
+        Client.__init__(self, logger=logger, config=setting.cfg, conn=conn)
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
         self.title(title)
+        self.minsize(200, 200)
         self.configure_app()
 
     def configure_app(self):
@@ -41,7 +44,9 @@ class App(Client, MainWindow):
         configuration."""
         self.on_window_exit(self.shutdown)
         self.setup_root()
-        self.minsize(200, 200)
+
+        palette_opts = self.create_palette(self.setting.theme.palette)
+        self.set_palette(**palette_opts)
 
     def setup_root(self):
         """Setups the root widget of the window and its children."""
@@ -62,10 +67,10 @@ class App(Client, MainWindow):
             self.logger.exception(str(ex))
             self.shutdown()
 
-    def _run_backend(self): # TODO - error handler
+    def _run_backend(self):
         """Starts the backend. This should be running inside `App.thread`."""
         try:
-            asyncio.run(self.main())
+            asyncio.run(self.main()) # TODO - error handler
         except BaseException as ex:
             self.logger.exception(str(ex))
             self.shutdown()
@@ -99,3 +104,21 @@ class App(Client, MainWindow):
         # form = ConnInitForm(self)
         # callback = lambda **kw: Client.init_connection(self, **kw)  # noqa: E731
         # form.on_submit(callback)
+
+    def create_palette(self, palette: PaletteOpts) -> TkPaletteOpts:
+        """Create palette options from color palette."""
+        return {
+            "activeBackground": palette.surface0,
+            "activeForeground": palette.blue,
+            "background": palette.base,
+            "disabledBackground": palette.surface0,
+            "disabledForeground": palette.overlay0,
+            "foreground": palette.text,
+            "highlightBackground": palette.surface2,
+            "highlightColor": palette.lavender,
+            "insertBackground": palette.pink,
+            "selectBackground": palette.blue,
+            "selectColor": palette.base,
+            "selectForeground": palette.base,
+            "troughColor": palette.surface0,
+        }

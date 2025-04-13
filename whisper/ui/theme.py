@@ -11,12 +11,10 @@ classes
 * ThemedTkWidgetMixin - mixin class to transform tkinter widget to preferred theme.
 """
 
-import tkinter as tk
-import tkinter.font as tkfont
 from dataclasses import dataclass
 from typing import Dict
 
-from .typing import PaletteOpts, TkFontOpts
+from .typing import PaletteOpts
 
 
 __all__ = (
@@ -29,16 +27,11 @@ __all__ = (
 @dataclass(frozen=True)
 class Palette:
     """Color palette for widget color attributes. Make sure that color values are
-    provided as hexadecimal values or recogonised color names.
+    provided as hexadecimal values or recogonised color names."""
 
-    Categories:
-    * surface: surface0, surface1, surface2
-    * text: text, subtext1, subtext2
-    * overlay: overlay0, overlay1, overlay2
-    * background: base, mantle, crust
-    * general: white, black, red, orange, yellow, green, cyan, blue, violet, magenta
-    * special: info, success, warning, danger
-    """
+    base: str
+    mantle: str
+    crust: str
 
     surface0: str
     surface1: str
@@ -52,25 +45,20 @@ class Palette:
     overlay1: str
     overlay2: str
 
-    base: str
-    mantle: str
-    crust: str
-
-    white: str
-    black: str
+    rosewater: str
+    flamingo: str
+    pink: str
+    mauve: str
     red: str
-    orange: str
+    maroon: str
+    peach: str
     yellow: str
     green: str
-    cyan: str
+    teal: str
+    sky: str
+    sapphire: str
     blue: str
-    violet: str
-    magenta: str
-
-    info: str
-    success: str
-    warning: str
-    danger: str
+    lavender: str
 
 
 @dataclass(frozen=True, repr=False)
@@ -78,25 +66,7 @@ class Theme:
     """A Theme data object."""
 
     name: str
-    """name of the theme"""
-
     palette: Palette
-    """Color palette"""
-
-    font: tkfont.Font
-    """Tkinter font"""
-
-    @classmethod
-    def from_dict(cls,
-        name: str,
-        color_palette: Dict[PaletteOpts, str],
-        fontopts: TkFontOpts,
-        root: tk.Misc | None = None,
-    ):
-        """Builds theme object from objects."""
-        palette = Palette(**color_palette)
-        font = tkfont.Font(root=root, **fontopts)
-        return cls(name, palette, font)
 
 
 class ThemedTkWidgetMixin:

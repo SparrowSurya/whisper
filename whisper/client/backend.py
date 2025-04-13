@@ -8,7 +8,7 @@ from functools import cached_property
 from typing import Tuple
 
 from whisper.client.base import BaseClient
-from whisper.client.settings import ClientSetting
+from whisper.client.settings import Config
 from whisper.client.tcp import TcpClient
 from whisper.client.workers import PacketReader, PacketWriter
 from whisper.eventloop import EventLoop
@@ -24,14 +24,14 @@ class Client(BaseClient, EventLoop):
 
     def __init__(self,
         logger: Logger,
-        setting: ClientSetting | None = None,
+        config: Config,
         conn: TcpClient | None = None,
     ):
         """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, conn)
         EventLoop.__init__(self)
         self.logger = logger
-        self.setting = setting or ClientSetting.defaults()
+        self.config = config
 
         self.reader = PacketReader(logger=self.logger)
         self.writer = PacketWriter(logger=self.logger)
@@ -50,7 +50,7 @@ class Client(BaseClient, EventLoop):
         """Provides remote server address depending upon the connection."""
         if self.is_connected:
             return BaseClient.server_address(self)
-        return self.setting("host"), self.setting("port")
+        return self.config.host, self.config.port
 
     def open_connection(self):
         """Connect to remote server."""

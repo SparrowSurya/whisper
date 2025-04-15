@@ -3,11 +3,44 @@ This module provides custom input widget.
 """
 
 import tkinter as tk
+from enum import StrEnum
+from typing import List
 
 from .custom import CustomWidget
 from .typing import (TkEntryInvalidateCmd, TkEntryJustifyOpts, TkEntryStateOpts,
     TkReliefOpts, TkScreenUnits, TkEntryValidateCmd, TkEntryValidateOpts, TkCursor,
-    TkNone)
+    TkNone, TkEntryValidateParams)
+
+
+# Source: https://www.tcl-lang.org/man/tcl8.5/TkCmd/entry.htm#M-validatecommand
+class VcmdOpt(StrEnum):
+    """Validation param options."""
+
+    TYPE = "%d"
+    """Type of action: 1 for insert, 0 for delete, or -1 for focus, forced or
+    textvariable validation"""
+
+    INDEX = "%i"
+    """Index of char string to be inserted/deleted, if any, otherwise -1"""
+
+    NEXT_VAL = "%P"
+    """Value if the change is allowed."""
+
+    PREV_VAL = "%s"
+    """Value before the change."""
+
+    CURR_VAL = "%v"
+    """Current value."""
+
+    VALUE = "%S"
+    """The text string being inserted/deleted, if any, {} otherwise"""
+
+    CAUSE = "%V"
+    """The type of validation that triggered the callback (key, focusin, focusout,
+    forced)"""
+
+    WIDGET = "%W"
+    """Name of widget."""
 
 
 class Input(tk.Entry, CustomWidget):
@@ -32,6 +65,7 @@ class Input(tk.Entry, CustomWidget):
         state: TkEntryStateOpts = "normal",
         takefocus: bool = True,
         validate_on: TkEntryValidateOpts = "none",
+        validate_params: List[TkEntryValidateParams] | TkNone = "",
         validatecommand: TkEntryValidateCmd | TkNone = "",
         variable: tk.Variable | TkNone = "",
         width: TkScreenUnits = 0,
@@ -55,10 +89,19 @@ class Input(tk.Entry, CustomWidget):
             textvariable=variable, width=width, xscrollcommand=xscrollcommand)
 
         if vcmd != "":
-            vcmd = (self.register(vcmd), "%P", "%s", "%S", "%d")
+            vcmd = (self.register(vcmd), validate_params)
 
         if icmd != "":
             icmd = (self.register(icmd),)
 
         self.config(validatecommand=vcmd, invalidcommand=icmd)
         CustomWidget.__init__(self)
+
+    def clear_value(self):
+        """Clears value from input."""
+        self.delete("0", "end")
+
+    def set_value(self, value: str):
+        """Set given value in input."""
+        self.clear_value()
+        self.insert("0", value)

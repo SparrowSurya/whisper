@@ -2,7 +2,11 @@
 This modules provides various types used in ui sub package.
 """
 
-from typing import Union, Callable, Literal, TypedDict
+# TODO
+# 1. this requires a complete rework since most of them are incorrect
+# 2. whisper.typing package specially for type support
+
+from typing import Union, Callable, Literal, TypedDict, Tuple
 
 
 __all__ = (
@@ -18,6 +22,7 @@ __all__ = (
     "TkEntryStateOpts",
     "TkEntryJustifyOpts",
     "TkEntryValidateOpts",
+    "TkEntryValidateParams",
     "TkEntryValidateCmd",
     "TkEntryInvalidateCmd",
     "TkFontOpts",
@@ -42,7 +47,8 @@ TkBtnStateOpts = Literal["normal", "active", "disabled"]
 TkEntryStateOpts = Literal["disabled", "normal", "readonly"]
 TkEntryJustifyOpts = Literal["center", "left", "right"]
 TkEntryValidateOpts = Literal["all", "focus", "focusin", "focusout", "key", "none"]
-TkEntryValidateCmd = Callable[[str, str, str, int], bool]
+TkEntryValidateParams = Literal["%d", "%i", "%P", "%s", "%v", "%S", "%V", "%W"]
+TkEntryValidateCmd = Callable[[Tuple[str | int, ...]], bool]
 TkEntryInvalidateCmd = Callable[[], None]
 
 

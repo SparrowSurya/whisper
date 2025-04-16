@@ -3,42 +3,22 @@ This module provides a handler class to manage client connections and their data
 """
 
 import socket
-from dataclasses import dataclass, field
 from typing import Dict, Any
 
-
-@dataclass(frozen=True, repr=False, order=True, slots=True)
-class Address:
-    """Tuple of host and port."""
-
-    host: str
-    port: int
-
-    def __repr__(self) -> str:
-        return f"<Address: ({self.host}, {self.port})>"
-
-    def __str__(self) -> str:
-        return f"{self.host}:{self.port}"
+from whisper.typing import Address as _Address
 
 
-@dataclass(repr=False, slots=True)
 class ConnHandle:
     """Client connection handler object."""
 
-    sock: socket.socket
-    """Underlying socket object."""
+    __slots__ = ("sock", "address", "data", "serve", "close")
 
-    address: Address
-    """Address of the connection."""
-
-    data: Dict[str, Any] = field(default_factory=dict)
-    """Connection related data."""
-
-    serve: bool = field(default=False, init=False)
-    """if the connections is allowed to serve."""
-
-    close: bool = field(default=False, init=False)
-    """If connection should be closed."""
+    def __init__(self, sock: socket.socket, addr: _Address, data: Dict[str, Any]):
+        self.sock = sock
+        self.address = addr
+        self.data = data
+        self.serve = False
+        self.close = False
 
     @property
     def username(self) -> str | None:

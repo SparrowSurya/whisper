@@ -7,9 +7,17 @@ from enum import StrEnum
 from typing import List
 
 from .custom import CustomWidget
-from .typing import (TkEntryInvalidateCmd, TkEntryJustifyOpts, TkEntryStateOpts,
-    TkReliefOpts, TkScreenUnits, TkEntryValidateCmd, TkEntryValidateOpts, TkCursor,
-    TkNone, TkEntryValidateParams)
+from whisper.typing import (
+    Empty as _Empty,
+    Relief as _Relief,
+    ScreenUnit as _ScreenUnit,
+    Cursor as _Cursor,
+    EntryCmd as _EntryCmd,
+    EntryState as _EntryState,
+    EntryJustify as _EntryJustify,
+    EntryValidateWhen as _EntryValidateWhen,
+    EntryValidateOpt as _EntryValidateOpt,
+)
 
 
 # Source: https://www.tcl-lang.org/man/tcl8.5/TkCmd/entry.htm#M-validatecommand
@@ -49,26 +57,26 @@ class Input(tk.Entry, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        border: TkScreenUnits  = 0,
-        borderwidth: TkScreenUnits = 0,
-        cursor: TkCursor = "",
+        border: _ScreenUnit  = 0,
+        borderwidth: _ScreenUnit = 0,
+        cursor: _Cursor | _Empty = "",
         exportselection: bool = False,
-        highlightthickness: TkScreenUnits = 0,
-        insertborderwidth: TkScreenUnits = 0,
+        highlightthickness: _ScreenUnit = 0,
+        insertborderwidth: _ScreenUnit = 0,
         insertofftime: int = 300,
         insertontime: int = 500,
-        insertwidth: TkScreenUnits = 2,
-        invalidcommand: TkEntryInvalidateCmd | TkNone = "",
-        justify: TkEntryJustifyOpts = "left",
-        relief: TkReliefOpts = "sunken",
-        selectborderwidth: TkScreenUnits = 0,
-        state: TkEntryStateOpts = "normal",
+        insertwidth: _ScreenUnit = 2,
+        invalidcommand: _EntryCmd | _Empty = "",
+        justify: _EntryJustify = "left",
+        relief: _Relief = "sunken",
+        selectborderwidth: _ScreenUnit = 0,
+        state: _EntryState = "normal",
         takefocus: bool = True,
-        validate_on: TkEntryValidateOpts = "none",
-        validate_params: List[TkEntryValidateParams] | TkNone = "",
-        validatecommand: TkEntryValidateCmd | TkNone = "",
-        variable: tk.Variable | TkNone = "",
-        width: TkScreenUnits = 0,
+        validate_on: _EntryValidateWhen = "none",
+        validate_params: List[_EntryValidateOpt] | _Empty = "",
+        validatecommand: _EntryCmd | _Empty = "",
+        variable: tk.Variable | _Empty = "",
+        width: _ScreenUnit = 0,
         xscrollcommand: str = "",
     ):
         vcmd = ""

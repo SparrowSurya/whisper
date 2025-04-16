@@ -11,14 +11,17 @@ from whisper.packet import Packet
 from whisper.logger import Logger
 from whisper.server.base import BaseServer
 from whisper.server.connection import ConnHandle
-from whisper.server.tcp import  TcpServer
 from whisper.server.workers import ConnAcceptor, ConnReader, ConnWriter, PacketHandler
+from whisper.typing import (
+    TcpServer as _TcpServer,
+    AsyncQueue as _AsyncQueue,
+)
 
 
 class Server(BaseServer, EventLoop):
     """This class provides asynchronouse server backend for the chat applications."""
 
-    def __init__(self, logger: Logger, conn: TcpServer | None = None):
+    def __init__(self, logger: Logger, conn: _TcpServer):
         """The connection object is used to accept client connections."""
         BaseServer.__init__(self, conn)
         EventLoop.__init__(self)
@@ -33,12 +36,12 @@ class Server(BaseServer, EventLoop):
         self.handlers = {} # TODO: packet handlers
 
     @cached_property
-    def recvq(self) -> asyncio.Queue[Tuple[Packet, ConnHandle]]:
+    def recvq(self) -> _AsyncQueue[Tuple[Packet, ConnHandle]]:
         """Packets received from connection."""
         return asyncio.Queue()
 
     @cached_property
-    def sendq(self) -> asyncio.Queue[Tuple[Packet, Iterable[ConnHandle]]]:
+    def sendq(self) -> _AsyncQueue[Tuple[Packet, Iterable[ConnHandle]]]:
         """Packets to be sent to connections."""
         return asyncio.Queue()
 

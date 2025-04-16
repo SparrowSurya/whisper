@@ -3,8 +3,11 @@ This module provides tcp connection object for client.
 """
 
 import socket
-import asyncio
-from typing import Tuple
+
+from whisper.typing import (
+    Address as _Address,
+    EventLoop as _EventLoop,
+)
 
 
 class TcpClient:
@@ -20,7 +23,7 @@ class TcpClient:
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def address(self) -> Tuple[str, int]:
+    def address(self) -> _Address:
         """
         Provides client address as tuple of hostname and port address. Make sure that
         client is connected before calling it.
@@ -39,10 +42,10 @@ class TcpClient:
         """Closes the socket connection."""
         self.sock.close()
 
-    async def read(self, n: int, loop: asyncio.AbstractEventLoop) -> bytes:
+    async def read(self, n: int, loop: _EventLoop) -> bytes:
         """Read `n` bytes of data from socket."""
         return await loop.sock_recv(self.sock, n)
 
-    async def write(self, data: bytes, loop: asyncio.AbstractEventLoop) -> None:
+    async def write(self, data: bytes, loop: _EventLoop) -> None:
         """Write data to the socket."""
         return await loop.sock_sendall(self.sock, data)

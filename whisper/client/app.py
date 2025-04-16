@@ -8,11 +8,14 @@ from typing import Self
 
 from whisper.client.backend import Client
 from whisper.client.settings import Setting
-from whisper.client.tcp import TcpClient
-from whisper.ui.typing import PaletteOpts, TkPaletteOpts
 from whisper.ui.window import MainWindow
+from whisper.ui.theme import Palette
 from whisper.layouts.root import Root
 from whisper.logger import Logger
+from whisper.typing import (
+    TcpClient as _TcpClient,
+    TkPalette as _TkPalette,
+)
 
 
 class App(Client, MainWindow):
@@ -24,12 +27,7 @@ class App(Client, MainWindow):
     Use `mainloop` to run the application.
     """
 
-    def __init__(self,
-        title: str,
-        logger: Logger,
-        setting: Setting,
-        conn: TcpClient | None = None,
-    ):
+    def __init__(self, title: str, logger: Logger, setting: Setting, conn: _TcpClient):
         """The `conn` object is used to connect with the servers."""
         MainWindow.__init__(self)
         self.setting = setting
@@ -101,11 +99,8 @@ class App(Client, MainWindow):
 
     def init_connection(self): # TODO
         """Opens a dialogue box for required details."""
-        # form = ConnInitForm(self)
-        # callback = lambda **kw: Client.init_connection(self, **kw)  # noqa: E731
-        # form.on_submit(callback)
 
-    def create_palette(self, palette: PaletteOpts) -> TkPaletteOpts:
+    def create_palette(self, palette: Palette) -> _TkPalette:
         """Create palette options from color palette."""
         return {
             "activeBackground": palette.surface0,

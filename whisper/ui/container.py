@@ -5,7 +5,11 @@ This module provides custom container widget.
 import tkinter as tk
 
 from .custom import CustomWidget
-from .typing import TkCursor, TkReliefOpts, TkScreenUnits
+from whisper.typing import (
+    Cursor as _Cursor,
+    ScreenUnit as _ScreenUnit,
+    Relief as _Relief,
+)
 
 
 class Container(tk.Frame, CustomWidget):
@@ -14,17 +18,19 @@ class Container(tk.Frame, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        border: TkScreenUnits = 0,
-        borderwidth: TkScreenUnits = 0,
-        cursor: TkCursor = "",
-        height: TkScreenUnits = 0,
-        highlightthickness: TkScreenUnits = 0,
-        padx: TkScreenUnits = 0,
-        pady: TkScreenUnits = 0,
-        relief: TkReliefOpts = "flat",
-        width: TkScreenUnits = 0,
+        border: _ScreenUnit = 0,
+        borderwidth: _ScreenUnit = 0,
+        cursor: _Cursor = "",
+        container: bool = False,
+        height: _ScreenUnit = 0,
+        highlightthickness: _ScreenUnit = 0,
+        padx: _ScreenUnit = 0,
+        pady: _ScreenUnit = 0,
+        relief: _Relief = "flat",
+        width: _ScreenUnit = 0,
     ):
         tk.Frame.__init__(self, master=master, border=border, borderwidth=borderwidth,
-            cursor=cursor, height=height, highlightthickness=highlightthickness,
-            padx=padx, pady=pady, relief=relief, width=width)
+            cursor=cursor, container=container, height=height,
+            highlightthickness=highlightthickness, padx=padx, pady=pady, relief=relief,
+            width=width)
         CustomWidget.__init__(self)

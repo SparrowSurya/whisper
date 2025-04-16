@@ -5,9 +5,9 @@ This module provide custom tkinter window and toplevel window.
 import tkinter as tk
 from typing import Callable
 
-from whisper.ui.typing import TkPaletteOpts
 from .custom import CustomWidget
 from .utils import Binding
+from whisper.typing import TkPalette as _TkPalette
 
 
 class MainWindow(tk.Tk, CustomWidget):
@@ -35,7 +35,7 @@ class MainWindow(tk.Tk, CustomWidget):
         """Exit the window wihtout invoking the `on_window_exit` callback."""
         tk.Tk.destroy(self)
 
-    def set_palette(self, **options: TkPaletteOpts):
+    def set_palette(self, **options: _TkPalette):
         """Sets tkinter palette options. Do not provide empty values."""
         tk.Tk.tk_setPalette(self, **options)
 
@@ -62,6 +62,6 @@ class Window(tk.Toplevel, CustomWidget):
         """Exit the window wihtout invoking the `on_window_exit` callback."""
         tk.Toplevel.destroy()
 
-    def set_palette(self, **options: TkPaletteOpts):
+    def set_palette(self, **options: _TkPalette):
         """Sets tkinter palette options. Do not provide empty values."""
         tk.Toplevel.tk_setPalette(self, **options)

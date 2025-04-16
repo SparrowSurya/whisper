@@ -5,16 +5,19 @@ manager provides easy way to manage asynchronous tasks, workers and other corout
 
 import asyncio
 from functools import cached_property
-from typing import Tuple
 
 from whisper.client.base import BaseClient
 from whisper.client.settings import Config
-from whisper.client.tcp import TcpClient
 from whisper.client.workers import PacketReader, PacketWriter
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.packet.v1 import InitPacket
 from whisper.logger import Logger
+from whisper.typing import (
+    TcpClient as _TcpClient,
+    AsyncQueue as _AsyncQueue,
+    Address as _Address,
+)
 
 
 class Client(BaseClient, EventLoop):
@@ -22,11 +25,7 @@ class Client(BaseClient, EventLoop):
     It provides asynchronous client backend along with event loop management.
     """
 
-    def __init__(self,
-        logger: Logger,
-        config: Config,
-        conn: TcpClient | None = None,
-    ):
+    def __init__(self, logger: Logger, config: Config, conn: _TcpClient):
         """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, conn)
         EventLoop.__init__(self)
@@ -37,16 +36,16 @@ class Client(BaseClient, EventLoop):
         self.writer = PacketWriter(logger=self.logger)
 
     @cached_property
-    def recvq(self) -> asyncio.Queue[Packet]:
+    def recvq(self) -> _AsyncQueue[Packet]:
         """Packet received from server."""
         return asyncio.Queue()
 
     @cached_property
-    def sendq(self) -> asyncio.Queue[Packet]:
+    def sendq(self) -> _AsyncQueue[Packet]:
         """Packet send to server."""
         return asyncio.Queue()
 
-    def server_address(self) -> Tuple[str, int]:
+    def server_address(self) ->_Address:
         """Provides remote server address depending upon the connection."""
         if self.is_connected:
             return BaseClient.server_address(self)

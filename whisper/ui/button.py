@@ -3,11 +3,17 @@ This module provides custom button widget.
 """
 
 import tkinter as tk
-from typing import Any
 
 from .custom import CustomWidget
-from .typing import (TkBtnCmd, TkBtnStateOpts, TkPosOpts, TkReliefOpts, TkScreenUnits,
-    TkCursor, TkNone)
+from whisper.typing import (
+    ScreenUnit as _ScreenUnit,
+    Empty as _Empty,
+    Cursor as _Cursor,
+    Relief as _Relief,
+    ButtonState as _ButtonState,
+    BUttonCmd as _ButtonCmd,
+    Compound as _Compound,
+)
 
 
 class Button(tk.Button, CustomWidget):
@@ -16,41 +22,26 @@ class Button(tk.Button, CustomWidget):
     def __init__(self,
         master: tk.Misc,
         *,
-        bitmap: tk.BitmapImage | TkNone = "",
-        border: TkScreenUnits = 1,
-        borderwidth: TkScreenUnits = 0,
-        command: TkBtnCmd | TkNone = "",
-        cursor: TkCursor = "",
-        height: TkScreenUnits = 0,
-        highlightthickness: TkScreenUnits = 0,
-        image: tk.PhotoImage | TkNone = "",
-        position: TkPosOpts = "none",
-        padx: TkScreenUnits = 0,
-        pady: TkScreenUnits = 0,
-        relief: TkReliefOpts = "raised",
-        state: TkBtnStateOpts = "normal",
-        text: Any = "",
-        variable: tk.Variable | TkNone = "",
-        width: TkScreenUnits = 0,
-        wraplength: TkScreenUnits = 0,
+        bitmap: tk.BitmapImage | _Empty = "",
+        border: _ScreenUnit = 1,
+        borderwidth: _ScreenUnit = 0,
+        command: _ButtonCmd | _Empty = "",
+        compound: _Compound = "none",
+        cursor: _Cursor = "",
+        height: _ScreenUnit = 0,
+        highlightthickness: _ScreenUnit = 0,
+        image: tk.PhotoImage | _Empty = "",
+        padx: _ScreenUnit = 0,
+        pady: _ScreenUnit = 0,
+        relief: _Relief = "raised",
+        state: _ButtonState = "normal",
+        text: str = "",
+        variable: tk.Variable | _Empty = "",
+        width: _ScreenUnit = 0,
+        wraplength: _ScreenUnit = 0,
     ):
-        """Arguments:
-
-        * master - parent widget
-        * bitmap - bitmap image name or path (with '@' prefix)
-        * command - onclick callback
-        * cursor - cursor appearance on hover
-        * height/width - dimensions of widget
-        * image - image
-        * position - position of image w.r.t. text
-        * padx/pady - horizontal/vertical padding
-        * relief - button surface appearance
-        * state - state of the button
-        * text - button text
-        * variable - tkinter variable
-        """
         tk.Button.__init__(self, master=master, anchor="center", bd=0, bitmap=bitmap,
-        border=border, borderwidth=borderwidth, command=command, compound=position,
+        border=border, borderwidth=borderwidth, command=command, compound=compound,
         cursor=cursor, default=state, height=height,
         highlightthickness=highlightthickness, image=image, justify="center",
         overrelief="", padx=padx, pady=pady, relief=relief, state=state, text=text,

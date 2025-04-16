@@ -9,6 +9,7 @@ from whisper.settings import APP_NAME
 from whisper.ui.theme import Palette, Theme
 from whisper.logger import Logger, stdout_handler, file_handler
 from .app import App
+from .tcp import TcpClient
 from .cli import get_parser
 from .settings import Setting, Config
 
@@ -63,5 +64,5 @@ theme = Theme(
 setting = Setting(config, theme)
 setting.data["username"] = args.user
 
-app = App(APP_NAME, logger=logger, setting=setting)
+app = App(APP_NAME, logger=logger, setting=setting, conn=TcpClient())
 app.mainloop()

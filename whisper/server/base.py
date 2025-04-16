@@ -2,39 +2,36 @@
 This module provides the basic server functionality to manage clients and communication.
 """
 
-import asyncio
-
 from whisper.packet import Packet
-from whisper.server.tcp import TcpServer
 from whisper.server.connection import ConnHandle
+from whisper.typing import (
+    TcpServer as _TcpServer,
+    EventLoop as _EventLoop,
+)
 
 
 class BaseServer:
     """Base server class for communicating with clients. It provides asynchronous
     methods for reading, writing and accepting."""
 
-    def __init__(self, conn: TcpServer | None = None):
+    def __init__(self, conn: _TcpServer):
         """Initialise connection."""
-        self.connection = conn or TcpServer()
+        self.conn = conn
 
-    async def accept(self, loop: asyncio.AbstractEventLoop) -> ConnHandle:
+    async def accept(self, loop: _EventLoop) -> ConnHandle:
         """Accept incoming client connections."""
-        sock, address = await self.connection.accept(loop)
+        sock, address = await self.conn.accept(loop)
         return ConnHandle(sock, address) # type: ignore
 
-    async def read(self, conn: ConnHandle, loop: asyncio.AbstractEventLoop) -> Packet:
+    async def read(self, conn: ConnHandle, loop: _EventLoop) -> Packet:
         """Read `n` bytes from connection."""
-        reader = lambda n: self.connection.read(conn.sock, n, loop)  # noqa: E731
+        reader = lambda n: self.conn.read(conn.sock, n, loop)  # noqa: E731
         return await Packet.from_stream(reader)
 
-    async def write(self,
-        conn: ConnHandle,
-        packet: Packet,
-        loop: asyncio.AbstractEventLoop,
-    ):
+    async def write(self, conn: ConnHandle, packet: Packet, loop: _EventLoop):
         """Write `data` to connection."""
         data = packet.to_stream()
-        return await self.connection.write(conn.sock, data, loop)
+        return await self.conn.write(conn.sock, data, loop)
 
     def close(self, conn: ConnHandle):
         """Close the connection."""
@@ -42,8 +39,8 @@ class BaseServer:
 
     def start_server(self, host: str, port: int):
         """Start the server on given address."""
-        self.connection.start(host, port)
+        self.conn.start(host, port)
 
     def stop_server(self):
         """Close the server."""
-        self.connection.stop()
+        self.conn.stop()

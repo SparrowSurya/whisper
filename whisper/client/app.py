@@ -10,7 +10,7 @@ from whisper.client.backend import Client
 from whisper.client.settings import Setting
 from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
-from whisper.layouts.root import Root
+from whisper.components.root import Root
 from whisper.logger import Logger
 from whisper.typing import (
     TcpClient as _TcpClient,

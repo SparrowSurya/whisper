@@ -16,6 +16,7 @@ from typing import Dict
 
 from whisper.typing import (
     Font as _Font,
+    PaletteOpts as _PaletteOpts,
 )
 
 
@@ -62,6 +63,12 @@ class Palette:
     blue: str
     lavender: str
 
+    danger: str
+    warn: str
+    success: str
+    info: str
+
+    accent: str
 
 @dataclass(frozen=True, repr=False)
 class Theme:
@@ -84,10 +91,10 @@ class ThemedTkWidgetMixin:
     * configure (taken from tkinter widget)
     """
 
-    colorscheme: Dict[str, str] = {}
+    colorscheme: Dict[str, _PaletteOpts] = {}
     """Mapping from tkinter attribute to palette attributes."""
 
-    def get_colorscheme(self) -> Dict[str, str]:
+    def get_colorscheme(self) -> Dict[str, _PaletteOpts]:
         """Provides the colorscheme information."""
         return self.colorscheme
 

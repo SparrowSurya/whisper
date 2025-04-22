@@ -4,7 +4,7 @@ This module provides custom input widget.
 
 import tkinter as tk
 from enum import StrEnum
-from typing import List
+from typing import Sequence, Mapping
 
 from .custom import CustomWidget
 from whisper.typing import (
@@ -17,6 +17,8 @@ from whisper.typing import (
     EntryJustify as _EntryJustify,
     EntryValidateWhen as _EntryValidateWhen,
     EntryValidateOpt as _EntryValidateOpt,
+    InputColorAttr as _ColorAttr,
+    PaletteOpts as _PaletteOpts,
 )
 
 
@@ -61,7 +63,7 @@ class Input(tk.Entry, CustomWidget):
         borderwidth: _ScreenUnit = 0,
         cursor: _Cursor | _Empty = "",
         exportselection: bool = False,
-        highlightthickness: _ScreenUnit = 0,
+        highlightthickness: _ScreenUnit = 1,
         insertborderwidth: _ScreenUnit = 0,
         insertofftime: int = 300,
         insertontime: int = 500,
@@ -73,7 +75,7 @@ class Input(tk.Entry, CustomWidget):
         state: _EntryState = "normal",
         takefocus: bool = True,
         validate_on: _EntryValidateWhen = "none",
-        validate_params: List[_EntryValidateOpt] | _Empty = "",
+        validate_params: Sequence[_EntryValidateOpt] | _Empty = "",
         validatecommand: _EntryCmd | _Empty = "",
         variable: tk.Variable | _Empty = "",
         width: _ScreenUnit = 0,
@@ -104,6 +106,21 @@ class Input(tk.Entry, CustomWidget):
 
         self.config(validatecommand=vcmd, invalidcommand=icmd)
         CustomWidget.__init__(self)
+
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
+        return {
+            "background": "surface0",
+            "foreground": "text",
+            "disabledbackground": "mantle",
+            "disabledforeground": "overlay1",
+            "selectbackground": "surface2",
+            "selectforeground": "text",
+            "highlightbackground": "surface1",
+            "highlightcolor": "blue",
+            "insertbackground": "text",
+            "readonlybackground": "surface0",
+        }
 
     def clear_value(self):
         """Clears value from input."""

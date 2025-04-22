@@ -86,3 +86,52 @@ PaletteOpts = Literal[
     "info",
     "accent",
 ]
+
+
+# window color attributes
+WindowColorAttr = Literal[
+    "background",
+    "highlightbackground",
+    "highlightcolor",
+]
+
+# button color attributes
+ButtonColorAttr = Literal[
+    "background",
+    "foreground",
+    "activebackground",
+    "activeforeground",
+    "disabledbackground",
+    "disabledforeground",
+    "highlightbackground",
+    "highlightcolor",
+]
+
+# label color attributes
+LabelColorAttr = Literal[
+    "background",
+    "foreground",
+    "highlightbackground",
+    "highlightcolor",
+]
+
+# input color attributes
+InputColorAttr = Literal[
+    "background",
+    "foreground",
+    "disabledbackground",
+    "disabledforeground",
+    "selectbackground",
+    "selectforeground",
+    "highlightbackground",
+    "highlightcolor",
+    "insertbackground",
+    "readonlybackground",
+]
+
+# container color attributes
+ContainerColorAttr = Literal[
+    "background",
+    "highlightbackground",
+    "highlightcolor",
+]

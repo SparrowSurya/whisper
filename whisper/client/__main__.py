@@ -57,7 +57,12 @@ theme = Theme(
         surface0="#313244",
         base="#1E1E2E",
         mantle="#181825",
-        crust="#11111B"
+        crust="#11111B",
+        danger="#FE8BA8",
+        warn="#FAB387",
+        success="#A6E3A1",
+        info="#89DCEB",
+        accent="#CBA8F7",
     ),
     font={
         "family": "Roboto",

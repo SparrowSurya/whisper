@@ -7,7 +7,7 @@ import tkinter.font as tkfont
 from typing import Callable, Unpack
 
 from .custom import CustomWidget
-from .utils import Binding
+from .event_bind import EventBinding
 from whisper.typing import (
     TkPalette as _TkPalette,
     Font as _Font,
@@ -23,7 +23,7 @@ class MainWindow(tk.Tk, CustomWidget):
     def __init__(self):
         tk.Tk.__init__(self)
         CustomWidget.__init__(self)
-        self.exit_event = Binding(self, self.WINDOW_EXIT_EVENT, self.quit)
+        self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.quit)
         self.on_window_exit(self.quit)
 
     def on_window_exit(self, callback: Callable[[], None]):
@@ -63,7 +63,7 @@ class Window(tk.Toplevel, CustomWidget):
     def __init__(self, master: tk.Misc):
         tk.Toplevel.__init__(self, master)
         CustomWidget.__init__(self)
-        self.exit_event = Binding(self, self.WINDOW_EXIT_EVENT, self.quit)
+        self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.quit)
         self.on_window_exit(self.quit)
 
     def on_window_exit(self, callback: Callable[[], None]):

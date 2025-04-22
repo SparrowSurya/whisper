@@ -3,6 +3,7 @@ This module provides custom button widget.
 """
 
 import tkinter as tk
+from typing import Mapping
 
 from .custom import CustomWidget
 from whisper.typing import (
@@ -13,6 +14,8 @@ from whisper.typing import (
     ButtonState as _ButtonState,
     BUttonCmd as _ButtonCmd,
     Compound as _Compound,
+    ButtonColorAttr as _ColorAttr,
+    PaletteOpts as _PaletteOpts,
 )
 
 
@@ -47,3 +50,15 @@ class Button(tk.Button, CustomWidget):
         overrelief="", padx=padx, pady=pady, relief=relief, state=state, text=text,
         textvariable=variable, underline=-1, width=width, wraplength=wraplength)
         CustomWidget.__init__(self)
+
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
+        return {
+            "background": "surface0",
+            "foreground": "text",
+            "activebackground": "surface1",
+            "activeforeground": "text",
+            "disabledforeground": "overlay1",
+            "highlightbackground": "surface1",
+            "highlightcolor": "blue",
+        }

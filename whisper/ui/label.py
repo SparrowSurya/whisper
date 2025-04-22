@@ -3,6 +3,7 @@ This module provides custom label widget.
 """
 
 import tkinter as tk
+from typing import Mapping
 
 from .custom import CustomWidget
 from whisper.typing import (
@@ -12,6 +13,8 @@ from whisper.typing import (
     ScreenUnit as _ScreenUnit,
     Cursor as _Cursor,
     Compound as _Compound,
+    LabelColorAttr as _ColorAttr,
+    PaletteOpts as _PaletteOpts,
 )
 
 
@@ -43,3 +46,12 @@ class Label(tk.Label, CustomWidget):
             relief=relief, state="normal", takefocus=False, text=text,
             textvariable=variable, underline=-1, width=width, wraplength=0)
         CustomWidget.__init__(self)
+
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
+        return {
+            "background": "base",
+            "foreground": "text",
+            "highlightbackground": "surface0",
+            "highlightcolor": "blue",
+        }

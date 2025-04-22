@@ -4,13 +4,15 @@ This module provide custom tkinter window and toplevel window.
 
 import tkinter as tk
 import tkinter.font as tkfont
-from typing import Callable, Unpack
+from typing import Callable, Unpack, Mapping
 
 from .custom import CustomWidget
 from .event_bind import EventBinding
 from whisper.typing import (
     TkPalette as _TkPalette,
     Font as _Font,
+    PaletteOpts as _PaletteOpts,
+    WindowColorAttr as _ColorAttr,
 )
 
 
@@ -53,6 +55,13 @@ class MainWindow(tk.Tk, CustomWidget):
             font = tkfont.nametofont(font_name, self)
             font.configure(**options)
 
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
+        return {
+            "background": "base",
+            "highlightbackground": "base",
+            "highlightcolor": "base",
+        }
 
 class Window(tk.Toplevel, CustomWidget):
     """Toplevel tkinter window which supports custom theme."""

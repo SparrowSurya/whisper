@@ -1,13 +1,5 @@
 """
-This module contains special utility variables, functions and classes.
-
-### Variable
-* NO_DATA - represents absence of data.
-
-### Functions
-
-### Classes
-* Binding - tkinter widget event binding.
+This module contains tkinter event binding object.
 """
 
 import tkinter as tk
@@ -18,7 +10,7 @@ from typing import Callable, Any
 NO_DATA = object()
 
 
-class Binding:
+class EventBinding:
     """Manages tkinter widget's event binding."""
 
     def __init__(self,

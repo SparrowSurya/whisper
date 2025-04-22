@@ -59,6 +59,11 @@ theme = Theme(
         mantle="#181825",
         crust="#11111B"
     ),
+    font={
+        "family": "Roboto",
+        "size": 11,
+        "weight": "normal",
+    },
 )
 
 setting = Setting(config, theme)

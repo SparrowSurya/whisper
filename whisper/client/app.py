@@ -41,10 +41,10 @@ class App(Client, MainWindow):
         """Configure the application settings. Use this to setup custom
         configuration."""
         self.on_window_exit(self.shutdown)
-        self.setup_root()
-
         palette_opts = self.create_palette(self.setting.theme.palette)
         self.set_palette(**palette_opts)
+        self.set_font(**self.setting.theme.font)
+        self.setup_root()
 
     def setup_root(self):
         """Setups the root widget of the window and its children."""

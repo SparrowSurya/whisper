@@ -3,11 +3,15 @@ This module provide custom tkinter window and toplevel window.
 """
 
 import tkinter as tk
-from typing import Callable
+import tkinter.font as tkfont
+from typing import Callable, Unpack
 
 from .custom import CustomWidget
 from .utils import Binding
-from whisper.typing import TkPalette as _TkPalette
+from whisper.typing import (
+    TkPalette as _TkPalette,
+    Font as _Font,
+)
 
 
 class MainWindow(tk.Tk, CustomWidget):
@@ -35,10 +39,19 @@ class MainWindow(tk.Tk, CustomWidget):
         """Exit the window wihtout invoking the `on_window_exit` callback."""
         tk.Tk.destroy(self)
 
-    def set_palette(self, **options: _TkPalette):
+    def set_palette(self, **options: Unpack[_TkPalette]):
         """Sets tkinter palette options. Do not provide empty values."""
         tk.Tk.tk_setPalette(self, **options)
 
+    def set_font(self, font_name: str = "*", **options: Unpack[_Font]):
+        """Set font options. Make sure that font_name should be valid tkinter font name"""
+        if font_name == "*":
+            for name in tkfont.names(self):
+                font = tkfont.nametofont(name, self)
+                font.configure(**options)
+        else:
+            font = tkfont.nametofont(font_name, self)
+            font.configure(**options)
 
 
 class Window(tk.Toplevel, CustomWidget):

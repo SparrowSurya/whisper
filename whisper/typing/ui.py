@@ -26,8 +26,8 @@ EntryValidateWhen = Literal["all", "focus", "focusin", "focusout", "key", "none"
 EntryValidateOpt = Literal["%d", "%i", "%P", "%s", "%v", "%S", "%V", "%W"]
 EntryCmd = str | list[str] | tuple[str, ...] | Callable[[], bool]
 
-# Font
-class TkFontOpts(TypedDict):
+
+class Font(TypedDict, total=False):
     name: str
     family: str
     size: int
@@ -36,24 +36,8 @@ class TkFontOpts(TypedDict):
     underline: bool
     overstrike: bool
 
-# tkinter palette
-TkPaletteOpts = Literal[
-    "activeBackground",
-    "activeForeground",
-    "background",
-    "disabledBackground",
-    "disabledForeground",
-    "foreground",
-    "highlightBackground",
-    "highlightColor",
-    "insertBackground",
-    "selectBackground",
-    "selectColor",
-    "selectForeground",
-    "troughColor"
-]
 
-class TkPalette(TypedDict):
+class TkPalette(TypedDict, total=False):
     activeBackground: str
     activeForeground: str
     background: str

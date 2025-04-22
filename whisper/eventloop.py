@@ -5,7 +5,7 @@ by the server.
 
 import asyncio
 from concurrent.futures import Future, InvalidStateError
-from typing import Coroutine, List, Set, Any
+from typing import Coroutine, List, Dict, Set, Any
 
 
 class EventLoop:
@@ -32,12 +32,13 @@ class EventLoop:
         """This blocks the thread and waits for special task to finish."""
         await asyncio.wrap_future(self._stop_fut)
 
-    def stop_running(self):
+    def stop_running(self) -> bool:
         """This unblocks the thread by setting result of special task."""
         try:
             self._stop_fut.set_result(None)
         except InvalidStateError:
             pass
+        return self._stop_fut.done()
 
     async def execute(self) -> List[Future[Coroutine[Any, Any, Any] | BaseException]]:
         """This executes tasks and blocks the thread until stopped explicitly."""
@@ -50,3 +51,13 @@ class EventLoop:
     def initial_tasks(self) -> Set[Coroutine[Any, Any, Any]]:
         """Provides a set of initial tasks."""
         return set()
+
+    def set_exception_handler(self):
+        """Sets custom exception handler to event loop."""
+        self.loop.set_exception_handler(self.set_exception_handler)
+
+    def exception_handler(self,
+        loop: asyncio.AbstractEventLoop,
+        context: Dict[str, Any],
+    ):
+        """Handle exception in eventloop."""

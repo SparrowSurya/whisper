@@ -117,7 +117,7 @@ class Input(tk.Entry, CustomWidget):
             "selectbackground": "surface2",
             "selectforeground": "text",
             "highlightbackground": "surface1",
-            "highlightcolor": "blue",
+            "highlightcolor": "mauve",
             "insertbackground": "text",
             "readonlybackground": "surface0",
         }

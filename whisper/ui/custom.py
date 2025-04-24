@@ -5,8 +5,6 @@ to customize their appearance and behaviour.
 
 from .theme import ThemedTkWidgetMixin
 
-from typing import Mapping
-
 
 class CustomWidget(ThemedTkWidgetMixin):
     """Base mixin class for custom tkinter widgets."""
@@ -16,7 +14,3 @@ class CustomWidget(ThemedTkWidgetMixin):
 
     def setup(self):
         """Setup and configure widgets."""
-
-    @classmethod
-    def default_colorscheme(cls) -> Mapping[str, str]:
-        return {}

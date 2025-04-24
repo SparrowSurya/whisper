@@ -11,8 +11,9 @@ classes
 * ThemedTkWidgetMixin - mixin class to transform tkinter widget to preferred theme.
 """
 
+import weakref
 from dataclasses import dataclass
-from typing import Dict
+from typing import Mapping
 
 from whisper.typing import (
     Font as _Font,
@@ -91,16 +92,25 @@ class ThemedTkWidgetMixin:
     * configure (taken from tkinter widget)
     """
 
-    colorscheme: Dict[str, _PaletteOpts] = {}
-    """Mapping from tkinter attribute to palette attributes."""
+    use_theme_ref: bool = False
+    """Weakref theme object whenever theme is applied."""
 
-    def get_colorscheme(self) -> Dict[str, _PaletteOpts]:
+    theme_ref: weakref.ReferenceType[Theme] | None = None
+    """Weak refrence to theme object."""
+
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[str, str]:
+        """Mapping from tkinter attribute to palette attributes."""
+        return {}
+
+    @classmethod
+    def get_colorscheme(cls, choice: str = "default") -> Mapping[str, _PaletteOpts]:
         """Provides the colorscheme information."""
-        return self.colorscheme
+        return getattr(cls, f"{choice}_colorscheme")
 
-    def set_theme_self(self, theme: Theme):
+    def set_theme_self(self, theme: Theme, choice: str = "default"):
         """Sets the theme on the widget."""
-        scheme = self.get_colorscheme()
+        scheme = self.get_colorscheme(choice)
         data = {attr: theme.scheme[value] for attr, value in scheme.items()}
         self.configure(**data)
 
@@ -111,6 +121,8 @@ class ThemedTkWidgetMixin:
 
     def set_theme(self, theme: Theme):
         """Sets theme on itself and children."""
+        if self.use_theme_ref:
+            self.theme_ref = weakref.ReferenceType(theme)
         self.set_theme_self(theme)
         self.set_theme_child(theme)
 

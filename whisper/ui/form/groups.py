@@ -21,7 +21,6 @@ class FormTextInputGroup(Container, FormInput):
         name: str = "",
         required: bool = True,
         initial_value: str = "",
-        store: bool = False,
         options: Mapping[str, Any] | None = None,
         **kwargs,
     ):
@@ -29,15 +28,13 @@ class FormTextInputGroup(Container, FormInput):
 
         self.label = FormLabel(self, text=label, required=required, justify="w")
         self.input = FormTextInput(self, name=name, required=required,
-            initial_value=initial_value, store=store, **(options or {}))
+            initial_value=initial_value, **(options or {}))
         self.error = FormErrorLabel(self, justify="w")
 
         self.name = self.input.name
         self.required = required
         self.initial_value = self.input.initial_value
         self.value = self.input.value
-        self.validate = self.input.validate
-        self.auto_validate = self.input.auto_validate
 
     def setup(self):
         """setup and configure widgets."""

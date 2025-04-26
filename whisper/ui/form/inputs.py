@@ -26,16 +26,7 @@ class FormTextInput(Input, FormInput):
         initial_value: str = "",
         **kwargs,
     ):
-        wid = type(self).__name__
-        if "validatecommand" in kwargs:
-            raise TypeError(
-                f"{wid} don't supports `validatecommand` use `validate` method")
-        if "invalidcommand" in kwargs:
-            raise TypeError(
-                f"{wid} don't supports `invalidcommand` use `show_invalid` method")
-
-        Input.__init__(self, master, invalidcommand=self.show_invalid,
-            validatecommand=self.validate, **kwargs)
+        Input.__init__(self, master, **kwargs)
 
         self._name = name
         self._required = required
@@ -89,6 +80,8 @@ class FormTextInput(Input, FormInput):
         return False
 
     def validate(self) -> str | None:
+        if self.required and self.value.strip() == "":
+            return "This field is required"
         return None
 
     def reset(self, use_initial_value: bool = True):

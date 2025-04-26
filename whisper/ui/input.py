@@ -19,6 +19,8 @@ from whisper.typing import (
     EntryValidateOpt as _EntryValidateOpt,
     InputColorAttr as _ColorAttr,
     PaletteOpts as _PaletteOpts,
+    Variable as _Variable,
+    Misc as _Misc,
 )
 
 
@@ -57,7 +59,7 @@ class Input(tk.Entry, CustomWidget):
     """Custom input widget."""
 
     def __init__(self,
-        master: tk.Misc,
+        master: _Misc,
         *,
         border: _ScreenUnit  = 0,
         borderwidth: _ScreenUnit = 0,
@@ -68,7 +70,7 @@ class Input(tk.Entry, CustomWidget):
         insertofftime: int = 300,
         insertontime: int = 500,
         insertwidth: _ScreenUnit = 2,
-        invalidcommand: _EntryCmd | _Empty = "",
+        invalidcommand: _EntryCmd = "",
         justify: _EntryJustify = "left",
         relief: _Relief = "sunken",
         selectborderwidth: _ScreenUnit = 0,
@@ -76,8 +78,8 @@ class Input(tk.Entry, CustomWidget):
         takefocus: bool = True,
         validate_on: _EntryValidateWhen = "none",
         validate_params: Sequence[_EntryValidateOpt] | _Empty = "",
-        validatecommand: _EntryCmd | _Empty = "",
-        variable: tk.Variable | _Empty = "",
+        validatecommand: _EntryCmd = "",
+        variable: _Variable = "",
         width: _ScreenUnit = 0,
         xscrollcommand: str = "",
     ):

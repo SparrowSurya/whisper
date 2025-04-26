@@ -8,7 +8,6 @@ from typing import Mapping
 from .custom import CustomWidget
 from whisper.typing import (
     ScreenUnit as _ScreenUnit,
-    Empty as _Empty,
     Cursor as _Cursor,
     Relief as _Relief,
     ButtonState as _ButtonState,
@@ -16,6 +15,10 @@ from whisper.typing import (
     Compound as _Compound,
     ButtonColorAttr as _ColorAttr,
     PaletteOpts as _PaletteOpts,
+    Bitmap as _Bitmap,
+    Image as _Image,
+    Variable as _Variable,
+    Misc as _Misc,
 )
 
 
@@ -23,23 +26,23 @@ class Button(tk.Button, CustomWidget):
     """Custom button widget."""
 
     def __init__(self,
-        master: tk.Misc,
+        master: _Misc,
         *,
-        bitmap: tk.BitmapImage | _Empty = "",
+        bitmap: _Bitmap = "",
         border: _ScreenUnit = 1,
         borderwidth: _ScreenUnit = 0,
-        command: _ButtonCmd | _Empty = "",
+        command: _ButtonCmd = "",
         compound: _Compound = "none",
         cursor: _Cursor = "",
         height: _ScreenUnit = 0,
         highlightthickness: _ScreenUnit = 0,
-        image: tk.PhotoImage | _Empty = "",
+        image: _Image = "",
         padx: _ScreenUnit = 0,
         pady: _ScreenUnit = 0,
         relief: _Relief = "raised",
         state: _ButtonState = "normal",
         text: str = "",
-        variable: tk.Variable | _Empty = "",
+        variable: _Variable = "",
         width: _ScreenUnit = 0,
         wraplength: _ScreenUnit = 0,
     ):

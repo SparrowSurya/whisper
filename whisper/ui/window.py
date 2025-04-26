@@ -13,6 +13,7 @@ from whisper.typing import (
     Font as _Font,
     PaletteOpts as _PaletteOpts,
     WindowColorAttr as _ColorAttr,
+    Misc as _Misc,
 )
 
 
@@ -69,7 +70,7 @@ class Window(tk.Toplevel, CustomWidget):
     WINDOW_EXIT_EVENT = "<<Exit-Window>>"
     """Custom window exit event."""
 
-    def __init__(self, master: tk.Misc):
+    def __init__(self, master: _Misc):
         tk.Toplevel.__init__(self, master)
         CustomWidget.__init__(self)
         self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.quit)

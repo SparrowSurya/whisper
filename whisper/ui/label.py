@@ -9,12 +9,15 @@ from .custom import CustomWidget
 from whisper.typing import (
     LabelJustify as _LabelJustify,
     Relief as _Relief,
-    Empty as _Empty,
     ScreenUnit as _ScreenUnit,
     Cursor as _Cursor,
     Compound as _Compound,
     LabelColorAttr as _ColorAttr,
     PaletteOpts as _PaletteOpts,
+    Bitmap as _Bitmap,
+    Variable as _Variable,
+    Image as _Image,
+    Misc as _Misc,
 )
 
 
@@ -22,23 +25,23 @@ class Label(tk.Label, CustomWidget):
     """Custom label widget."""
 
     def __init__(self,
-        master: tk.Misc,
+        master: _Misc,
         *,
-        bitmap: tk.BitmapImage | _Empty = "",
+        bitmap: _Bitmap = "",
         border: _ScreenUnit = 0,
         borderwidth: _ScreenUnit = 0,
         cursor: _Cursor = "",
         compound: _Compound = "none",
         height: _ScreenUnit = 0,
         highlightthickness: _ScreenUnit = 0,
-        image: tk.PhotoImage | _Empty = "",
+        image: _Image = "",
         justify: _LabelJustify = "center",
         padx: _ScreenUnit = 0,
         pady: _ScreenUnit = 0,
         relief: _Relief = "flat",
         text: str = "",
         width: _ScreenUnit = 0,
-        variable: tk.Variable | _Empty = "",
+        variable: _Variable = "",
     ):
         tk.Label.__init__(self, master, anchor=justify, bitmap=bitmap, border=border,
             borderwidth=borderwidth, cursor=cursor, compound=compound, height=height,

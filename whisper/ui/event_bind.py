@@ -5,6 +5,8 @@ This module contains tkinter event binding object.
 import tkinter as tk
 from typing import Callable, Any
 
+from whisper.typing import Widget as _Widget
+
 
 
 NO_DATA = object()
@@ -14,7 +16,7 @@ class EventBinding:
     """Manages tkinter widget's event binding."""
 
     def __init__(self,
-        widget: tk.Widget,
+        widget: _Widget,
         sequence: str,
         callback: Callable[[tk.Event | None, Any | object], None],
         *,

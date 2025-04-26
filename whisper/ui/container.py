@@ -12,6 +12,7 @@ from whisper.typing import (
     Relief as _Relief,
     ContainerColorAttr as _ColorAttr,
     PaletteOpts as _PaletteOpts,
+    Misc as _Misc,
 )
 
 
@@ -19,7 +20,7 @@ class Container(tk.Frame, CustomWidget):
     """Custom container widget."""
 
     def __init__(self,
-        master: tk.Misc,
+        master: _Misc,
         *,
         border: _ScreenUnit = 0,
         borderwidth: _ScreenUnit = 0,

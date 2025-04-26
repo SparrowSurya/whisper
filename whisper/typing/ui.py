@@ -2,6 +2,7 @@
 This module provides typing support for ui package.
 """
 
+import tkinter as tk
 from typing import List, Literal, Callable, TypedDict
 
 # General / Common
@@ -11,6 +12,11 @@ Cursor = str | List[str]
 Anchor = Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"]
 Relief = Literal["flat", "groove", "raised", "solid", "sunken"]
 Compound = Literal["none", "bottom", "top", "left", "right", "center"]
+Misc = tk.Misc
+Bitmap = tk.Bitmap | Empty
+Image = tk.PhotoImage
+Variable = tk.Variable | Empty
+Widget = tk.Widget
 
 # Label
 LabelJustify = Literal["w", "center", "e"]
@@ -24,7 +30,7 @@ EntryState = Literal["disabled", "normal", "readonly"]
 EntryJustify = Literal["center", "left", "right"]
 EntryValidateWhen = Literal["all", "focus", "focusin", "focusout", "key", "none"]
 EntryValidateOpt = Literal["%d", "%i", "%P", "%s", "%v", "%S", "%V", "%W"]
-EntryCmd = str | list[str] | tuple[str, ...] | Callable[[], bool]
+EntryCmd = str | list[str] | tuple[str, ...] | Callable[[], bool] | Empty
 
 
 class Font(TypedDict, total=False):

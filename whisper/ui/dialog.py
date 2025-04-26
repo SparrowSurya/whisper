@@ -5,6 +5,7 @@ This module provides dialogue window widget.
 import tkinter as tk
 
 from .custom import CustomWidget
+from whisper.typing import Misc as _Misc
 
 
 class Dialog(tk.Toplevel, CustomWidget):
@@ -14,7 +15,7 @@ class Dialog(tk.Toplevel, CustomWidget):
     other configurations.
     """
 
-    def __init__(self, master: tk.Misc):
+    def __init__(self, master: _Misc):
         """Must provide master window."""
         tk.Toplevel.__init__(self, master)
         self.transient(master)

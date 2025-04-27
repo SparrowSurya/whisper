@@ -29,11 +29,11 @@ class Server(BaseServer, EventLoop):
         self.logger = logger
         self.clients: Set[ConnHandle] = set()
 
-        self.acceptor = ConnAcceptor(logger=self.logger)
-        self.handler = PacketHandler(logger=self.logger)
-        self.writer = ConnWriter(logger=self.logger)
+        # self.acceptor = ConnAcceptor(logger=self.logger)
+        # self.handler = PacketHandler(logger=self.logger)
+        # self.writer = ConnWriter(logger=self.logger)
 
-        self.handlers = {} # TODO: packet handlers
+        # self.handlers = {} # TODO: packet handlers
 
     @cached_property
     def recvq(self) -> _AsyncQueue[Tuple[Packet, ConnHandle]]:
@@ -46,11 +46,14 @@ class Server(BaseServer, EventLoop):
         return asyncio.Queue()
 
     def run(self, host: str, port: int):
-        """Starts the server eventloop."""
-        try:
-            asyncio.run(self.start(host, port))
-        except BaseException as ex:
-            self.logger.exception(str(ex))
+        """Starts the server backend."""
+        coro = self.start(host, port)
+        error = EventLoop.run_coro(self, coro)
+        if error is not None:
+            if isinstance(error, KeyboardInterrupt):
+                self.logger.info("keyboard interrupt")
+            else:
+                self.logger.exception(f"eventloop returned with error: {error!s}, 12")
 
     async def start(self, host: str, port: int):
         """Start the server."""
@@ -72,20 +75,23 @@ class Server(BaseServer, EventLoop):
         )
         self.clients.remove(conn)
 
-    def initial_tasks(self):
-        """Initial tasks."""
-        return super().initial_tasks() | {
-            self.acceptor(
-                acceptor=lambda: self.accept(self.loop),
-                serve=lambda conn: self.schedule(self.serve(conn)),
-            ),
-            self.writer(
-                writer=lambda packet, conn: self.write(conn, packet, self.loop),
-                queue=self.sendq,
-            ),
-            self.handler(
-                recvq=self.recvq,
-                sendq=self.sendq,
-                handler=self.get_handler, # TODO - not implemented
-            ),
-        }
+    # def initial_tasks(self):
+    #     """Initial tasks."""
+    #     return super().initial_tasks() | {
+    #         self.acceptor(
+    #             acceptor=lambda: self.accept(self.loop),
+    #             serve=lambda conn: self.schedule(self.serve(conn)),
+    #         ),
+    #         self.writer(
+    #             writer=lambda packet, conn: self.write(conn, packet, self.loop),
+    #             queue=self.sendq,
+    #         ),
+    #         self.handler(
+    #             recvq=self.recvq,
+    #             sendq=self.sendq,
+    #             handler=self.get_handler, # TODO - not implemented
+    #         ),
+    #     }
+
+    def exception_handler(self, loop, context):
+        pass

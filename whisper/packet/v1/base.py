@@ -95,13 +95,3 @@ class PacketV1(Packet):
     @classmethod
     def create(cls, data: bytes, code: int = 0):
         return cls(type_=cls.packet_type(), data=data, code=code,)
-
-    @classmethod
-    @abc.abstractmethod
-    def request(cls, *args: Any, **kwargs: Any):
-        """Create request packet."""
-
-    @classmethod
-    @abc.abstractmethod
-    def response(cls, *args: Any, **kwargs: Any):
-        """Create response packet."""

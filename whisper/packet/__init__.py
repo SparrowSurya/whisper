@@ -50,7 +50,16 @@ class Packet(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create(cls, *args: Any, **kwargs: Any):
         """Create packet from the arguments."""
-        return cls()
+
+    @classmethod
+    @abc.abstractmethod
+    def request(cls, *args: Any, **kwargs: Any):
+        """Create request packet."""
+
+    @classmethod
+    @abc.abstractmethod
+    def response(cls, *args: Any, **kwargs: Any):
+        """Create response packet."""
 
     @abc.abstractmethod
     def to_stream(self) -> bytes:

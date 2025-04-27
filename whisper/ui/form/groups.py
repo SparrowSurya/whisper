@@ -26,7 +26,8 @@ class FormTextInputGroup(Container, FormInput):
     ):
         Container.__init__(self, master, **kwargs)
 
-        self.label = FormLabel(self, text=label, required=required, justify="w")
+        text_options = {"justify": "w"}
+        self.label = FormLabel(self, text=label, required=required, options=text_options)
         self.input = FormTextInput(self, name=name, required=required,
             initial_value=initial_value, **(options or {}))
         self.error = FormErrorLabel(self, justify="w")
@@ -37,7 +38,9 @@ class FormTextInputGroup(Container, FormInput):
         self.value = self.input.value
 
     def setup(self):
-        """setup and configure widgets."""
+        self.label.setup()
+        self.input.setup()
+        self.error.setup()
 
     @property
     def required(self) -> bool:

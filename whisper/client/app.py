@@ -11,6 +11,7 @@ from whisper.client.settings import Setting
 from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
 from whisper.components.root import Root
+from whisper.components.conn_init_form import ConnInitFormDialog
 from whisper.logger import Logger
 from whisper.typing import (
     TcpClient as _TcpClient,
@@ -32,6 +33,7 @@ class App(Client, MainWindow):
         MainWindow.__init__(self)
         self.setting = setting
         Client.__init__(self, logger=logger, config=setting.cfg, conn=conn)
+        self.root = Root(self)
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
         self.title(title)
         self.minsize(200, 200)
@@ -43,12 +45,13 @@ class App(Client, MainWindow):
         self.on_window_exit(self.shutdown)
         palette_opts = self.create_palette(self.setting.theme.palette)
         self.set_palette(**palette_opts)
+        self.set_theme(self.setting.theme)
         self.set_font(**self.setting.theme.font)
         self.setup_root()
 
     def setup_root(self):
         """Setups the root widget of the window and its children."""
-        self.root = Root(self)
+        self.root.setup()
         self.root.pack(fill="both", expand="true")
 
     @property
@@ -99,6 +102,15 @@ class App(Client, MainWindow):
 
     def init_connection(self): # TODO
         """Opens a dialogue box for required details."""
+
+        def callback(**kwargs):
+            nonlocal self, dialog
+            Client.init_connection(self, **kwargs)
+            dialog.close()
+
+        dialog = ConnInitFormDialog(self, callback)
+        dialog.setup()
+        dialog.pack(fill="x", padx=8, pady=8)
 
     def create_palette(self, palette: Palette) -> _TkPalette:
         """Create palette options from color palette."""

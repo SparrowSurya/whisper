@@ -16,7 +16,7 @@ from .settings import Setting, Config
 
 PROGRAM = f"{APP_NAME}.client"
 
-parser = get_parser(PROGRAM, "client command line interface")
+parser = get_parser(PROGRAM, "whisper.client application")
 args = parser.parse_args(sys.argv[1:])
 
 log_handlers = [stdout_handler, file_handler]

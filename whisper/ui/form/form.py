@@ -28,17 +28,17 @@ class Form(Container):
 
     def validate(self) -> bool:
         """Validates input fields."""
-        return all(widget.validate(effect=True) for widget in self.inputs)
+        return all(widget.validate() for widget in self.inputs)
 
     def collect_values(self) -> Dict[str, Any]:
         """Read values from input fields."""
-        return {widget.name: widget.value() for widget in self.inputs}
+        return {widget.name: widget.value for widget in self.inputs}
 
     def submit_form(self):
         """Submit form if validation success."""
         if self.validate():
             values = self.collect_values()
-            self._submit_cb(values)
+            self._submit_cb(**values)
 
     def reset(self):
         """Resets form input."""

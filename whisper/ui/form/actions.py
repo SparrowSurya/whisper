@@ -5,18 +5,19 @@ This module provides form action buttons.
 import tkinter as tk
 
 from .. import Button
-from .base import Form, FormAction, FormActionType
+from .form import Form
+from .base import FormAction, FormActionType
 
 
 class FormSubmit(Button, FormAction):
     """Form save action button."""
 
-    def __init__(self, master: tk.Misc, form: Form, **kwargs):
+    def __init__(self, master: tk.Misc, *, form: Form, **kwargs):
         if "command" in kwargs:
             wid = type(self).__name__
             raise TypeError(
                 f"{wid} don't supports `validatecommand` use `validate` method")
-        Button.__init__(self, master, command=form.submit, **kwargs)
+        Button.__init__(self, master, command=form.submit_form, **kwargs)
         self.form = form
 
     @classmethod
@@ -28,11 +29,10 @@ class FormSubmit(Button, FormAction):
         return {
             **Button.default_colorscheme(),
             "foreground": "base",
-            "background": "green",
+            "background": "mauve",
             "activeforeground": "base",
-            "activebackground": "mauve",
+            "activebackground": "overlay0",
             "disabledforeground": "overlay0",
-            "disabledbackground": "surface1",
         }
 
 
@@ -88,5 +88,4 @@ class FormReset(Button, FormAction):
             "activeforeground": "base",
             "activebackground": "peach",
             "disabledforeground": "overlay0",
-            "disabledbackground": "surface1",
         }

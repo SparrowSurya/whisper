@@ -62,6 +62,6 @@ class Button(tk.Button, CustomWidget):
             "activebackground": "surface1",
             "activeforeground": "text",
             "disabledforeground": "overlay1",
-            "highlightbackground": "surface1",
+            "highlightbackground": "blue",
             "highlightcolor": "blue",
         }

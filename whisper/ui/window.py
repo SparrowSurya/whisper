@@ -64,6 +64,7 @@ class MainWindow(tk.Tk, CustomWidget):
             "highlightcolor": "base",
         }
 
+
 class Window(tk.Toplevel, CustomWidget):
     """Toplevel tkinter window which supports custom theme."""
 

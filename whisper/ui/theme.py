@@ -71,6 +71,10 @@ class Palette:
 
     accent: str
 
+    def __getitem__(self, attr: str) -> str:
+        return getattr(self, attr)
+
+
 @dataclass(frozen=True, repr=False)
 class Theme:
     """A Theme data object."""
@@ -106,12 +110,12 @@ class ThemedTkWidgetMixin:
     @classmethod
     def get_colorscheme(cls, choice: str = "default") -> Mapping[str, _PaletteOpts]:
         """Provides the colorscheme information."""
-        return getattr(cls, f"{choice}_colorscheme")
+        return getattr(cls, f"{choice}_colorscheme")()
 
     def set_theme_self(self, theme: Theme, choice: str = "default"):
         """Sets the theme on the widget."""
         scheme = self.get_colorscheme(choice)
-        data = {attr: theme.scheme[value] for attr, value in scheme.items()}
+        data = {attr: theme.palette[value] for attr, value in scheme.items()}
         self.configure(**data)
 
     def set_theme_child(self, theme: Theme):

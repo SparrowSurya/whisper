@@ -39,7 +39,7 @@ class EventLoop:
         execution if any."""
         error = None
         asyncio.set_event_loop(self.loop)
-        self.loop.set_exception_handler(self.set_exception_handler)
+        self.loop.set_exception_handler(self.exception_handler)
         self._stop_event.clear()
         try:
             asyncio.run(coro)

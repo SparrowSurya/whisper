@@ -11,6 +11,7 @@ from concurrent.futures import Future
 from typing import Tuple, List, Dict, Set, Any, Callable, Coroutine, ParamSpec, TypeVar
 
 
+T = TypeVar("T")
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -33,6 +34,7 @@ class EventLoop:
     * signal_handler - handles the received signal to the process
     * exception_handler - handle uncaught exception in eventloop tasks
     * initial_tasks - any task that need to run as soon as eventloop starts
+    * stop_main_result - a value that was given while calling `stop_main`
     """
 
     signals: List[int] = [signal.SIGINT, signal.SIGTERM]
@@ -96,10 +98,10 @@ class EventLoop:
         """Run coroutine in eventloop. Must be called from same thread."""
         return self.loop.create_task(coro, name=name)
 
-    def stop_main(self):
+    def stop_main(self, result: Any = None):
         """This signals the `main` coroutine to finish."""
         if not self._stop_event.done():
-            self._stop_event.set_result(None)
+            self._stop_event.set_result(result)
 
     def signal_handler(self, sig: int | None = None):
         """Handle the received signal."""
@@ -115,3 +117,7 @@ class EventLoop:
     def initial_tasks(self) -> Set[Tuple[str | None, Callable[[], Coroutine[Any, Any, None]]]]:
         """Provides a set of initial tasks."""
         return set()
+
+    def stop_main_result(self) -> T:
+        """Provides the value given to `stop_main`."""
+        return self._stop_event.result()

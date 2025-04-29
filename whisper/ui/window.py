@@ -23,6 +23,8 @@ class MainWindow(tk.Tk, CustomWidget):
     WINDOW_EXIT_EVENT = "<<Exit-MainWindow>>"
     """Custom window exit event."""
 
+    GuiError = tk.TclError
+
     def __init__(self):
         tk.Tk.__init__(self)
         CustomWidget.__init__(self)

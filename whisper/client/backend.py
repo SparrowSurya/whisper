@@ -8,7 +8,6 @@ from functools import cached_property
 
 from whisper.client.base import BaseClient
 from whisper.client.settings import Config
-from whisper.client.workers import PacketReader, PacketWriter
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.packet.v1 import InitPacket
@@ -27,13 +26,9 @@ class Client(BaseClient, EventLoop):
 
     def __init__(self, logger: Logger, config: Config, conn: _TcpClient):
         """The `conn` object is used to connect with remote server."""
-        BaseClient.__init__(self, conn)
+        BaseClient.__init__(self, logger, conn)
         EventLoop.__init__(self)
-        self.logger = logger
         self.config = config
-
-        self.reader = PacketReader(logger=self.logger)
-        self.writer = PacketWriter(logger=self.logger)
 
     @cached_property
     def recvq(self) -> _AsyncQueue[Packet]:
@@ -54,32 +49,27 @@ class Client(BaseClient, EventLoop):
     def open_connection(self):
         """Connect to remote server."""
         host, port = self.server_address()
-        self.logger.debug(f"connecting to {(host, port)}")
         BaseClient.open_connection(self, host, port)
-        self.logger.info("connectiion established")
-
-    def close_connection(self):
-        super().close_connection()
-        self.logger.info("connection closed")
-
-    def shutdown(self):
-        """This marks the closing of running tasks and connection close."""
-        self.logger.info("shutting down event loop")
-        self.stop_running()
 
     def initial_tasks(self):
         return super().initial_tasks() | {
-            self.reader(
-                queue=self.recvq,
-                reader=lambda: self.read(self.loop),
-            ),
-            self.writer(
-                queue=self.sendq,
-                writer=lambda p: self.write(p, self.loop),
-            )
+            ("ResponseReader", self.read_coro),
+            ("RequestWriter", self.write_coro),
         }
 
     def init_connection(self, username: str):
         """This initialises the client on server side."""
         packet = InitPacket.create(username=username)
         self.schedule(self.sendq.put(packet))
+
+    async def read_coro(self):
+        """Reads incoming packets from connection."""
+        while True:
+            packet = await self.read(self.loop)
+            await self.recvq.put(packet)
+
+    async def write_coro(self):
+        """Writes outgoing packets to connection."""
+        while True:
+            packet = await self.sendq.get()
+            await self.write(packet, self.loop)

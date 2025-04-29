@@ -3,7 +3,7 @@ This module provides common type annotations for other typing modules.
 """
 
 from socket import socket
-from typing import Tuple, Generic, TypeVar, Protocol
+from typing import Tuple, TypeVar, Protocol
 
 
 Address = Tuple[str, int]
@@ -15,6 +15,6 @@ class EventLoop(Protocol):
 
 P = TypeVar("P")
 
-class AsyncQueue(Generic[P]):
+class AsyncQueue(Protocol[P]):
     async def put(self, item: P): ...
     async def get(self) -> P: ...

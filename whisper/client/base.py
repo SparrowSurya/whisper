@@ -6,6 +6,7 @@ using packet. It also provide limited support of connection management.
 from enum import StrEnum, auto
 
 from whisper.packet import Packet
+from whisper.logger import Logger
 from whisper.typing import (
     TcpClient as _TcpClient,
     Address as _Address,
@@ -17,10 +18,7 @@ class ConnState(StrEnum):
     """Connection state."""
 
     NOT_CONNECTED = auto()
-    """No Connection is established."""
-
     CONNECTED = auto()
-    """Connection is established."""
 
 
 class BaseClient:
@@ -29,8 +27,9 @@ class BaseClient:
     also manages connection state (to some extent for now).
     """
 
-    def __init__(self, conn: _TcpClient):
+    def __init__(self, logger: Logger, conn: _TcpClient):
         """Requires a connection object to connect to server."""
+        self.logger = logger
         self.conn = conn
         self.conn_state = ConnState.NOT_CONNECTED
 
@@ -50,18 +49,23 @@ class BaseClient:
         """Connect to server with given address."""
         self.conn.open(host, port)
         self.conn_state = ConnState.CONNECTED
+        self.logger.info(f"connection established with {(host, port)}")
 
     def close_connection(self):
         """Closes connection."""
         self.conn.close()
         self.conn_state = ConnState.NOT_CONNECTED
+        self.logger.info("connection closed")
 
     async def read(self, loop: _EventLoop) -> Packet:
         """Read packet from server."""
         reader = lambda n: self.conn.read(n, loop)  # noqa: E731
-        return await Packet.from_stream(reader)
+        packet = await Packet.from_stream(reader)
+        self.logger.debug(f"received packet: {packet!r}")
+        return packet
 
     async def write(self, packet: Packet, loop: _EventLoop):
         """Write packet to server."""
         data = packet.to_stream()
-        return await self.conn.write(data, loop)
+        await self.conn.write(data, loop)
+        self.logger.debug(f"sent packet: {packet!r}")

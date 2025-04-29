@@ -4,17 +4,18 @@ This module provides the server backend class.
 
 import asyncio
 from functools import cached_property
-from typing import Iterable, Set, Tuple
+from typing import Iterable, Dict, Tuple, NoReturn
 
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.logger import Logger
 from whisper.server.base import BaseServer
 from whisper.server.connection import ConnHandle
-from whisper.server.workers import ConnAcceptor, ConnReader, ConnWriter, PacketHandler
+# from .handlers import handlers
 from whisper.typing import (
     TcpServer as _TcpServer,
     AsyncQueue as _AsyncQueue,
+    Address as _Address,
 )
 
 
@@ -23,17 +24,12 @@ class Server(BaseServer, EventLoop):
 
     def __init__(self, logger: Logger, conn: _TcpServer):
         """The connection object is used to accept client connections."""
-        BaseServer.__init__(self, conn)
+        BaseServer.__init__(self, logger, conn)
         EventLoop.__init__(self)
 
         self.logger = logger
-        self.clients: Set[ConnHandle] = set()
-
-        # self.acceptor = ConnAcceptor(logger=self.logger)
-        # self.handler = PacketHandler(logger=self.logger)
-        # self.writer = ConnWriter(logger=self.logger)
-
-        # self.handlers = {} # TODO: packet handlers
+        self.clients: Dict[_Address, ConnHandle] = {}
+        # self.handlers = {handler.packet_type: handler(self) for handler in handlers}
 
     @cached_property
     def recvq(self) -> _AsyncQueue[Tuple[Packet, ConnHandle]]:
@@ -47,51 +43,73 @@ class Server(BaseServer, EventLoop):
 
     def run(self, host: str, port: int):
         """Starts the server backend."""
-        coro = self.start(host, port)
-        error = EventLoop.run_coro(self, coro)
+        error = EventLoop.run_main(self, self.main, host=host, port=port)
         if error is not None:
             if isinstance(error, KeyboardInterrupt):
                 self.logger.info("keyboard interrupt")
             else:
                 self.logger.exception(f"eventloop returned with error: {error!s}, 12")
 
-    async def start(self, host: str, port: int):
-        """Start the server."""
+    async def main(self, host: str, port: int): # type: ignore[override]
         self.start_server(host, port)
-        self.logger.info(f"server running at {(host, port)}")
-        await self.execute()
+        await EventLoop.main(self)
         self.stop_server()
-        self.logger.info("server stopped")
 
-    async def serve(self, conn: ConnHandle):
+    def shutdown(self, sig: int | None = None):
+        self.logger.info(f"Received signal: {sig}")
+        EventLoop.stop_main(self)
+
+    async def serve_coro(self, conn: ConnHandle):
         """Connection lifetime."""
-        self.logger.info(f"new connection from {conn.address}")
-        self.clients.add(conn)
-        reader = ConnReader(logger=self.logger)
-        await reader(
-            conn=conn,
-            reader=lambda conn: self.read(conn, self.loop),
-            queue=self.recvq,
-        )
-        self.clients.remove(conn)
-
-    # def initial_tasks(self):
-    #     """Initial tasks."""
-    #     return super().initial_tasks() | {
-    #         self.acceptor(
-    #             acceptor=lambda: self.accept(self.loop),
-    #             serve=lambda conn: self.schedule(self.serve(conn)),
-    #         ),
-    #         self.writer(
-    #             writer=lambda packet, conn: self.write(conn, packet, self.loop),
-    #             queue=self.sendq,
-    #         ),
-    #         self.handler(
-    #             recvq=self.recvq,
-    #             sendq=self.sendq,
-    #             handler=self.get_handler, # TODO - not implemented
-    #         ),
-    #     }
+        self.clients[conn.address] = conn
+        await self.read_coro(conn)
+        self.clients.pop(conn.address)
 
     def exception_handler(self, loop, context):
-        pass
+        self.logger.error(f"uncaught exception in eventloop task: {context}")
+
+    async def handle_cancel(self, coro, name: str, *args, **kwargs):
+        try:
+            await coro(*args, **kwargs)
+        except self.CancelledError:
+            self.logger.info(f"{name} cancelled")
+        except KeyboardInterrupt:
+            self.logger.info(f"keyboard interrupt at {name}")
+        except Exception as ex:
+            self.logger.exception(f"error occured in {name}: {ex}")
+
+    async def accept_coro(self) -> NoReturn:
+        """Accepts incoming connection."""
+        while True:
+            conn = await self.accept(self.loop)
+            self.create_task(self.serve_coro(conn))
+
+    async def read_coro(self, conn: ConnHandle):
+        """Reads incoming packets from connection."""
+        while not conn.close:
+            packet = await self.read(conn, self.loop)
+            await self.recvq.put((packet, conn))
+
+    async def write_coro(self) -> NoReturn:
+        """Writes outgoing packet to connnections."""
+        while True:
+            packet, conns = await self.sendq.get()
+            for conn in conns:
+                await self.write(conn, packet, self.loop)
+
+    # async def handler_coro(self) -> NoReturn:
+    #     """Handles incoming packets from queue and writes outgoing packets to queue."""
+    #     while True:
+    #         packet, conn = await self.recvq.get()
+    #         handler = self.handler[packet.kind]
+    #         if responses := handler(packet, conn):
+    #             for packet, conns in responses:
+    #                 await self.sendq.put((packet, conns))
+
+    def initial_tasks(self):
+        """Initial tasks."""
+        return super().initial_tasks() | {
+            ("ConnectionAcceptor", self.accept_coro),
+            ("ResponseWriter", self.write_coro),
+            # ("PacketHandler", self.handler_coro),
+        }

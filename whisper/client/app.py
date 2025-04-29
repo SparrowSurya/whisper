@@ -2,7 +2,7 @@
 The module contains the client application object.
 """
 
-import asyncio
+import signal
 import threading
 from typing import Self
 
@@ -13,11 +13,13 @@ from whisper.ui.theme import Palette
 from whisper.components.root import Root
 from whisper.components.conn_init_form import ConnInitFormDialog
 from whisper.logger import Logger
+from whisper.packet.v1 import ExitPacket, ExitReason
 from whisper.typing import (
     TcpClient as _TcpClient,
     TkPalette as _TkPalette,
 )
 
+# TODO - this file fails mypy checking
 
 class App(Client, MainWindow):
     """Main application (Frontend + Backend).
@@ -42,7 +44,7 @@ class App(Client, MainWindow):
     def configure_app(self):
         """Configure the application settings. Use this to setup custom
         configuration."""
-        self.on_window_exit(self.shutdown)
+        self.on_window_exit(lambda: self.shutdown(ExitReason.SELF_EXIT))
         palette_opts = self.create_palette(self.setting.theme.palette)
         self.set_palette(**palette_opts)
         self.set_theme(self.setting.theme)
@@ -61,44 +63,57 @@ class App(Client, MainWindow):
 
     def mainloop(self, n: int = 0):
         """Starts the application."""
+        for sig in self.signals:
+            self.logger.info(f"signal handler attahed: {sig!r}")
+            signal.signal(sig, lambda *_: self.signal_handler(sig))
+        self.logger.info("running mainloop")
+        self.after(1000, self.run)
         try:
-            self.logger.info("running mainloop")
             MainWindow.mainloop(self, n)
         except BaseException as ex:
             self.logger.exception(str(ex))
-            self.shutdown()
+            self.shutdown(ExitReason.EXCEPTION)
 
     def _run_backend(self):
         """Starts the backend. This should be running inside `App.thread`."""
-        try:
-            asyncio.run(self.main()) # TODO - error handler
-        except BaseException as ex:
-            self.logger.exception(str(ex))
-            self.shutdown()
+        error = self.run_main(self.main)
+        if error is not None:
+            if isinstance(error, KeyboardInterrupt):
+                self.logger.info("keyboard interrupt")
+            else:
+                self.logger.exception(f"eventloop returned with error: {error!s}")
 
     def run(self):
         """Starts the backend thread."""
         tname = self.thread.name
         if not self.thread.is_alive():
             self.thread.start()
-            self.logger.info(f"thread {tname} started")
+            self.logger.info(f"{tname} running")
         else:
-            self.logger.warning(f"thread {tname} is already running")
+            self.logger.warning(f"{tname} is already running")
 
     async def main(self):
         """Backend lifecycle."""
         self.open_connection()
-        await self.execute()
+        await Client.main()
+        reason = self.exit_result()
+        self.logger.info(f"exit reason: {reason!r}")
+        await self.write(ExitPacket.request(reason))
         self.close_connection()
 
-    def shutdown(self):
+    def shutdown(self, reason: ExitReason = ExitReason.UNKNOWN):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
-            Client.shutdown(self)
+            Client.stop_main(self, reason)
             self.thread.join()
-            self.logger.info(f"thread {self.thread.name} joined")
+            self.logger.info(f"{self.thread.name} joined")
         MainWindow.quit(self)
         self.logger.info("mainloop exited")
+
+    def signal_handler(self, sig: int):
+        """Handles signal passed to application."""
+        self.logger.info(f"received signal: {sig!r}")
+        self.shutdown(ExitReason.FORCE_EXIT)
 
     def init_connection(self): # TODO
         """Opens a dialogue box for required details."""

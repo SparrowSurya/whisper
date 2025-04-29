@@ -10,6 +10,7 @@ from .container import Container
 from .button import Button
 from .input import Input
 
+# TODO - pending mypy typing for whole packge
 
 __all__ = (
     "MainWindow",

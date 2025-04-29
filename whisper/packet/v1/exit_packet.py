@@ -12,7 +12,7 @@ class ExitReason(IntEnum):
     """Describe the exit reason for client and server."""
 
     UNKNOWN = auto()
-    CRASH = auto()
+    EXCEPTION = auto()
     SELF_EXIT = auto()
     FORCE_EXIT = auto()
 

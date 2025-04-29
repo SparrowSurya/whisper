@@ -5,7 +5,7 @@ It provides command line interaction for client.
 import sys
 import logging
 
-from whisper.settings import APP_NAME
+from whisper.settings import APP_NAME, LOG_DIR
 from whisper.ui.theme import Palette, Theme
 from whisper.logger import Logger, stdout_handler, file_handler
 from .app import App
@@ -14,14 +14,14 @@ from .cli import get_parser
 from .settings import Setting, Config
 
 
-PROGRAM = f"{APP_NAME}.client"
-
-parser = get_parser(PROGRAM, "whisper.client application")
+program = f"{APP_NAME}.client"
+parser = get_parser(program, "whisper.client application")
 args = parser.parse_args(sys.argv[1:])
 
-log_handlers = [stdout_handler, file_handler]
-logger = Logger(APP_NAME, logging.DEBUG, log_handlers)
-logger.debug(f"Args: {args}")
+logfile = LOG_DIR / "client.log"
+log_handlers = [stdout_handler(), file_handler(logfile)]
+logger = Logger(program, logging.DEBUG, log_handlers)
+logger.debug(f"{program}: {args}")
 
 config = Config(
     host=args.host,

@@ -19,9 +19,9 @@ class Packet(metaclass=abc.ABCMeta):
         """Stores payload data that is being sent/received."""
         self.data = data
 
-    @classmethod
+    @staticmethod
     @abc.abstractmethod
-    def version(cls) -> int:
+    def version() -> int:
         """Provides the packet version."""
         msg = "Child class must define their unique packet version."
         raise NotImplementedError(msg)
@@ -84,29 +84,29 @@ class PacketRegistery:
     _packets: Dict[int, Type[Packet]] = {}
     """Maps version against their handlers."""
 
-    @classmethod
-    def version_allowed(cls, version: int):
+    @staticmethod
+    def version_allowed(version: int):
         """Know if version is allowed or not."""
         return version in range(1, 256)
 
-    @classmethod
-    def validate(cls, packet: Type[Packet]):
+    @staticmethod
+    def validate(packet: Type[Packet]):
         """Performs validation checks on packet"""
         if not issubclass(packet, Packet):
             msg = f"{packet.__name__} must be subclass of `Packet`"
             raise ValueError(msg)
 
         version = packet.version()
-        if not cls.version_allowed(version):
+        if not PacketRegistery.version_allowed(version):
             msg = f"Version number {version} is not allowed!"
             raise ValueError(msg)
 
-        if cls._packets.get(version) is not None:
+        if PacketRegistery._packets.get(version) is not None:
             msg = f"Packet v{version} is already registered"
             raise ValueError(msg)
 
-    @classmethod
-    def register(cls, packet: Type[Packet]) -> Type[Packet]:
+    @staticmethod
+    def register(packet: Type[Packet]) -> Type[Packet]:
         """Use this as decorator to register a packet.
 
         Usage:
@@ -114,16 +114,16 @@ class PacketRegistery:
         >>> class PacketV1(Packet):
         >>>     ...
         """
-        cls.validate(packet)
-        cls._packets[packet.version()] = packet
+        PacketRegistery.validate(packet)
+        PacketRegistery._packets[packet.version()] = packet
         return packet
 
-    @classmethod
-    def get_packet_cls(cls, version: int) -> Type[Packet]:
+    @staticmethod
+    def get_packet_cls(version: int) -> Type[Packet]:
         """Get packet class for the packet version."""
-        return cls._packets[version]
+        return PacketRegistery._packets[version]
 
-    @classmethod
-    def registered_versions(cls) -> Tuple[int, ...]:
+    @staticmethod
+    def registered_versions() -> Tuple[int, ...]:
         """Provides registered packet versions."""
-        return tuple(cls._packets.keys())
+        return tuple(PacketRegistery._packets.keys())

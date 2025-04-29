@@ -5,31 +5,34 @@ This module provides exit packet implementation for packet v1.
 import struct
 from enum import IntEnum, auto
 
-from .base import PacketType, PacketV1
+from .base import PacketType, PacketV1, Status
 
 
 class ExitReason(IntEnum):
     """Describe the exit reason for client and server."""
 
+    UNKNOWN = auto()
+    CRASH = auto()
     SELF_EXIT = auto()
     FORCE_EXIT = auto()
 
 
 class ExitPacket(PacketV1):
 
-    @classmethod
-    def packet_type(cls) -> PacketType:
+    @staticmethod
+    def packet_type() -> PacketType:
         return PacketType.EXIT
 
     @classmethod
     def request(cls, reason: ExitReason):
-        reason = (reason & 0x0F) << 4
-        return cls.create(struct.pack("B", reason))
+        value = (reason & 0x0F) << 4
+        return cls.create(struct.pack("B", value))
 
     @classmethod
-    def response(cls, reason: ExitReason, code: int):
-        reason = (reason & 0x0F) << 4
-        return cls.create(struct.pack("B", reason), code)
+    def response(cls, reason: ExitReason, status: Status):
+        data = struct.pack("B", (reason & 0x0F) << 4)
+        return cls.create(data, status)
 
-    def content(self) -> str:
-        return self.data.decode(encoding="UTF-8")
+    def content(self) -> ExitReason:
+        value = struct.unpack("B", self.data)[0] >> 4
+        return ExitReason(value)

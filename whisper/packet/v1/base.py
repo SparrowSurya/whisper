@@ -1,19 +1,18 @@
 """
-This modules provides the `PacketV1` abstract class, `PacketType` and its registery
-object.
+This modules provides packet version 1 and related objects.
 """
 
-import abc
 import struct
 from enum import IntEnum, auto
 from functools import cached_property
-from typing import Awaitable, Callable, Any
+from typing import Awaitable, Callable
 
 from whisper.packet import Packet, PacketRegistery
 
 
 __all__ = (
     "PacketType",
+    "Status",
     "PacketV1",
 )
 
@@ -24,6 +23,13 @@ class PacketType(IntEnum):
     EXIT = 0
     INIT = auto()
     MESSAGE = auto()
+
+
+class Status(IntEnum):
+    """Response status codes."""
+
+    SUCCESS = 0
+    VALIDATION_ERROR = auto()
 
 
 @PacketRegistery.register
@@ -39,31 +45,31 @@ class PacketV1(Packet):
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
     |     Version     |   PacketType    |            Data length            |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
-    |  Code  | 0b0000 |                Data (length bytes) ...              |
+    | Status | 0b0000 |                Data (length bytes) ...              |
     + - - - - - - - - + - - - - - - - - + - - - - - - - - + - - - - - - - - +
     ```
 
-    Use code value zero for request packet and non zero 4 bit int for response packet.
+    This class is supposed to be inherited by child class to provide custom packets.
     """
 
-    @classmethod
-    def version(cls) -> int:
+    @staticmethod
+    def version() -> int:
         """Packet version."""
         return 1
 
-    def __init__(self, type_: PacketType, data: bytes, code: int):
+    def __init__(self, type_: PacketType, data: bytes, status: Status):
         super().__init__(data)
         self.type = type_
-        self.code = code
+        self.status = status
 
     @classmethod
     async def from_stream(cls, reader: Callable[[int], Awaitable[bytes]]):
         """Construct packet from the stream."""
         type_ = PacketType(struct.unpack("B", await reader(1))[0])
         length = struct.unpack("H", await reader(2))[0]
-        code = struct.unpack("B", await reader(1))[0]
+        status = Status(struct.unpack("B", await reader(1))[0])
         data = await reader(length)
-        return cls(type_, data, code)
+        return cls(type_, data, status)
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
@@ -78,8 +84,8 @@ class PacketV1(Packet):
         version = super().to_stream()
         type_ = struct.pack("B", self.type)
         length = struct.pack("H", len(self.data))
-        code = struct.pack("B", (self.code & 0x0F) << 4)
-        return version + type_ + length + code + self.data
+        status = struct.pack("B", (self.status & 0x0F) << 4)
+        return version + type_ + length + status + self.data
 
     @cached_property
     def data_size_limit(self) -> int:
@@ -87,11 +93,21 @@ class PacketV1(Packet):
         metadata = 1 + 1 + 2 + 1
         return 0xFFFF - metadata
 
-    @classmethod
-    @abc.abstractmethod
-    def packet_type(cls) -> PacketType:
+    @staticmethod
+    def packet_type() -> PacketType:
         """Child class must implement this to define the type they handle."""
+        raise NotImplementedError
 
     @classmethod
-    def create(cls, data: bytes, code: int = 0):
-        return cls(type_=cls.packet_type(), data=data, code=code,)
+    def create(cls, data: bytes, status: Status = Status.SUCCESS):
+        return cls(type_=cls.packet_type(), data=data, status=status,)
+
+    @classmethod
+    def request(cls, *args, **kwargs):
+        """This must be implemented by child class."""
+        raise NotImplementedError
+
+    @classmethod
+    def response(cls, *args, **kwargs):
+        """This must be implemented by child class."""
+        raise NotImplementedError

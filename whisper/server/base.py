@@ -23,20 +23,20 @@ class BaseServer:
         """Accept incoming client connections."""
         sock, address = await self.conn.accept(loop)
         self.logger.info(f"accepted connection from {address}")
-        return ConnHandle(sock, address) # type: ignore
+        return ConnHandle(sock, address, {}) # type: ignore
 
     async def read(self, conn: ConnHandle, loop: _EventLoop) -> Packet:
         """Read `n` bytes from connection."""
         reader = lambda n: self.conn.read(conn.sock, n, loop)  # noqa: E731
         packet = await Packet.from_stream(reader)
-        self.logger.debug(f"received packet: {packet!r}")
+        self.logger.debug(f"received {packet!r} from {conn.address}")
         return packet
 
     async def write(self, conn: ConnHandle, packet: Packet, loop: _EventLoop):
         """Write `data` to connection."""
         data = packet.to_stream()
         await self.conn.write(conn.sock, data, loop)
-        self.logger.debug(f"sent packet: {packet!r}")
+        self.logger.debug(f"sent {packet!r} to {conn.address}")
 
     def close(self, conn: ConnHandle):
         """Close the connection."""

@@ -8,6 +8,7 @@ import logging
 from whisper.settings import APP_NAME, LOG_DIR
 from whisper.ui.theme import Palette, Theme
 from whisper.logger import Logger, stdout_handler, file_handler
+from whisper.packet import PacketRegistery
 from .app import App
 from .tcp import TcpClient
 from .cli import get_parser
@@ -74,5 +75,11 @@ theme = Theme(
 setting = Setting(config, theme)
 setting.data["username"] = args.user
 
-app = App(APP_NAME, logger=logger, setting=setting, conn=TcpClient())
-app.mainloop()
+try:
+    for module in PacketRegistery.ensure_regisered():
+        logger.debug(f"dynamically imported {module.__name__}")
+except Exception as ex:
+    logger.exception(f"error occured while ensuring packet registeration: {ex}")
+else:
+    app = App(APP_NAME, logger=logger, setting=setting, conn=TcpClient())
+    app.mainloop()

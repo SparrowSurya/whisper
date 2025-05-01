@@ -11,10 +11,9 @@ from .base import PacketType, PacketV1, PacketV1Registery, Status
 class ExitReason(IntEnum):
     """Describe the exit reason for client and server."""
 
-    UNKNOWN = auto()
-    EXCEPTION = auto()
     SELF_EXIT = auto()
     FORCE_EXIT = auto()
+    EXCEPTION = auto()
 
 
 @PacketV1Registery.register

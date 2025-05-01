@@ -3,6 +3,7 @@ This module provides client backend object which along with asynchronous event l
 manager provides easy way to manage asynchronous tasks, workers and other coroutines.
 """
 
+import struct
 import asyncio
 from functools import cached_property
 
@@ -53,23 +54,30 @@ class Client(BaseClient, EventLoop):
 
     def initial_tasks(self):
         return super().initial_tasks() | {
-            ("ResponseReader", self.read_coro),
-            ("RequestWriter", self.write_coro),
+            self.read_coro,
+            self.write_coro,
         }
 
     def init_connection(self, username: str):
         """This initialises the client on server side."""
-        packet = InitPacket.create(username=username)
-        self.schedule(self.sendq.put(packet))
+        packet = InitPacket.request(username=username)
+        self.create_task(self.sendq.put(packet), "ConnInitTask")
 
     async def read_coro(self):
         """Reads incoming packets from connection."""
+        self.logger.info("read_coro running")
         while True:
-            packet = await self.read(self.loop)
-            await self.recvq.put(packet)
+            try:
+                packet = await self.read(self.loop)
+            except struct.error:
+                self.logger.info("server disconnect")
+                return self.stop_main()
+            else:
+                await self.recvq.put(packet)
 
     async def write_coro(self):
         """Writes outgoing packets to connection."""
+        self.logger.info("write_coro running")
         while True:
             packet = await self.sendq.get()
             await self.write(packet, self.loop)

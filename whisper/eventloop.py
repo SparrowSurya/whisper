@@ -8,12 +8,10 @@ import signal
 import asyncio
 import threading
 from concurrent.futures import Future
-from typing import Tuple, List, Dict, Set, Any, Callable, Coroutine, ParamSpec, TypeVar
+from typing import List, Dict, Set, Any, Callable, Coroutine, ParamSpec
 
 
-T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R")
 
 class EventLoop:
     """
@@ -55,10 +53,10 @@ class EventLoop:
         return self._loop
 
     def run_main(self,
-        coro: Callable[P, Coroutine[Any, Any, R]],
+        coro: Callable[P, Coroutine[Any, Any, Any]],
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> BaseException | None:
+    ) -> Any:
         """Runs given coroutine in eventloop until finishes. It returns exceptions
         caught during execution if any."""
         asyncio.set_event_loop(self.loop)
@@ -70,14 +68,14 @@ class EventLoop:
             self._stop_event = Future()
         try:
             self.loop.run_until_complete(coro(*args, **kwargs))
-        except BaseException as ex:
-            return ex
+        except BaseException:
+            return sys.exc_info()
         return None
 
-    async def main(self) -> List[Future[R | BaseException]]:
+    async def main(self) -> List[Future[Any | BaseException]]:
         """It processes eventloop tasks until stopped."""
-        for name, fn in self.initial_tasks():
-            self.create_task(fn(), name)
+        for fn in self.initial_tasks():
+            self.create_task(fn())
         await asyncio.wrap_future(self._stop_event)
         tasks = [
             task for task in asyncio.all_tasks()
@@ -114,10 +112,10 @@ class EventLoop:
         """Handle exception in running task."""
         self.stop_main()
 
-    def initial_tasks(self) -> Set[Tuple[str | None, Callable[[], Coroutine[Any, Any, None]]]]:
+    def initial_tasks(self) -> Set[Callable[[], Coroutine[Any, Any, None]]]:
         """Provides a set of initial tasks."""
         return set()
 
-    def stop_main_result(self) -> T:
+    def stop_main_result(self) -> Any:
         """Provides the value given to `stop_main`."""
         return self._stop_event.result()

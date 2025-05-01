@@ -5,7 +5,7 @@ This modules provides packet version 1 and related objects.
 import struct
 from enum import IntEnum, auto
 from functools import cached_property
-from typing import Awaitable, Callable
+from typing import Tuple, Dict, Type, Awaitable, Callable
 
 from whisper.packet import Packet, PacketRegistery
 
@@ -14,6 +14,7 @@ __all__ = (
     "PacketType",
     "Status",
     "PacketV1",
+    "PacketV1Registery",
 )
 
 
@@ -69,7 +70,8 @@ class PacketV1(Packet):
         length = struct.unpack("H", await reader(2))[0]
         status = Status(struct.unpack("B", await reader(1))[0])
         data = await reader(length)
-        return cls(type_, data, status)
+        handler = PacketV1Registery.get_packet_cls(type_)
+        return handler(type_, data, status)
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
@@ -111,3 +113,51 @@ class PacketV1(Packet):
     def response(cls, *args, **kwargs):
         """This must be implemented by child class."""
         raise NotImplementedError
+
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        version = self.version()
+        return f"<{name}v{version}>"
+
+
+class PacketV1Registery:
+    """Manages the packetv1 handlers. Do not instantiate this class."""
+
+    _handlers: Dict[PacketType, Type[PacketV1]] = {}
+    """Maps packet type against their handlers."""
+
+    @staticmethod
+    def validate(handler: Type[PacketV1]):
+        """Performs validation checks on packet"""
+        if not issubclass(handler, PacketV1):
+            msg = f"{handler.__name__} must be subclass of `PacketV1`"
+            raise ValueError(msg)
+
+        type = handler.packet_type()
+        if PacketV1Registery._handlers.get(type) is not None:
+            msg = f"{handler.__name__} is already registered"
+            raise ValueError(msg)
+
+    @staticmethod
+    def register(handler: Type[PacketV1]) -> Type[PacketV1]:
+        """
+        Use this as decorator to register a packet type handler.
+
+        Usage:
+        >>> @PacketTypeRegistery.register
+        >>> class MyPacket(PacketV1):
+        >>>     ...
+        """
+        PacketV1Registery.validate(handler)
+        PacketV1Registery._handlers[handler.packet_type()] = handler
+        return handler
+
+    @staticmethod
+    def get_packet_cls(type: PacketType) -> Type[PacketV1]:
+        """Get packet class for the packet version."""
+        return PacketV1Registery._handlers[type]
+
+    @staticmethod
+    def registered_versions() -> Tuple[PacketType, ...]:
+        """Provides registered packet versions."""
+        return tuple(PacketV1Registery._handlers.keys())

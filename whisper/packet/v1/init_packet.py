@@ -6,9 +6,10 @@ This module provides init packet implementation for packet v1.
 from typing import Any, Dict
 
 from whisper.codec import json_decode, json_encode
-from .base import PacketType, PacketV1, Status
+from .base import PacketType, PacketV1, PacketV1Registery, Status
 
 
+@PacketV1Registery.register
 class InitPacket(PacketV1):
 
     @staticmethod

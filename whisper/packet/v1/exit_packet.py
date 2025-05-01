@@ -5,7 +5,7 @@ This module provides exit packet implementation for packet v1.
 import struct
 from enum import IntEnum, auto
 
-from .base import PacketType, PacketV1, Status
+from .base import PacketType, PacketV1, PacketV1Registery, Status
 
 
 class ExitReason(IntEnum):
@@ -17,6 +17,7 @@ class ExitReason(IntEnum):
     FORCE_EXIT = auto()
 
 
+@PacketV1Registery.register
 class ExitPacket(PacketV1):
 
     @staticmethod

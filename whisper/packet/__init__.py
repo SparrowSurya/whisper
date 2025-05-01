@@ -2,9 +2,13 @@
 This modules provies the packet used for communication between client and server.
 """
 
+import re
 import abc
 import struct
-from typing import Any, Awaitable, Callable, Dict, Tuple, Type
+import pathlib
+import importlib
+from types import ModuleType
+from typing import Any, Awaitable, Callable, Dict, List, Tuple, Type
 
 
 class Packet(metaclass=abc.ABCMeta):
@@ -127,3 +131,16 @@ class PacketRegistery:
     def registered_versions() -> Tuple[int, ...]:
         """Provides registered packet versions."""
         return tuple(PacketRegistery._packets.keys())
+
+    @staticmethod
+    def ensure_regisered() -> List[ModuleType]:
+        """Dynamically imports all packet versions packages to make sure they are
+        registered."""
+        packet_dir = pathlib.Path(__file__).parent
+        imported_modules = []
+        for subdir in packet_dir.iterdir():
+            if subdir.is_dir() and re.fullmatch("^v\d+$", subdir.name):
+                module_name = f"{__name__}.{subdir.name}"
+                module = importlib.import_module(module_name)
+                imported_modules.append(module)
+        return imported_modules

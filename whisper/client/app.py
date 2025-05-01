@@ -76,12 +76,9 @@ class App(Client, MainWindow):
 
     def _run_backend(self):
         """Starts the backend. This should be running inside `App.thread`."""
-        error = self.run_main(self.main)
-        if error is not None:
-            if isinstance(error, KeyboardInterrupt):
-                self.logger.info("keyboard interrupt")
-            else:
-                self.logger.exception(f"eventloop returned with error: {error!s}")
+        exc_info = self.run_main(self.main)
+        if exc_info is not None:
+            self.logger.exception("eventloop returned with error", exc_info=exc_info)
 
     def run(self):
         """Starts the backend thread."""
@@ -95,16 +92,16 @@ class App(Client, MainWindow):
     async def main(self):
         """Backend lifecycle."""
         self.open_connection()
-        await Client.main()
-        reason = self.exit_result()
-        self.logger.info(f"exit reason: {reason!r}")
-        await self.write(ExitPacket.request(reason))
+        self.init_connection()
+        await Client.main(self)
+        if reason := self.exit_result():
+            await self.write(ExitPacket.request(reason))
         self.close_connection()
 
-    def shutdown(self, reason: ExitReason = ExitReason.UNKNOWN):
+    def shutdown(self, reason: ExitReason | None = None):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
-            Client.stop_main(self, reason)
+            self.stop_main(self, reason)
             self.thread.join()
             self.logger.info(f"{self.thread.name} joined")
         MainWindow.quit(self)

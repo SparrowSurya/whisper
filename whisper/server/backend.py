@@ -2,12 +2,14 @@
 This module provides the server backend class.
 """
 
+import struct
 import asyncio
 from functools import cached_property
 from typing import Iterable, Dict, Tuple, NoReturn
 
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
+from whisper.packet.v1 import ExitPacket, ExitReason, Status
 from whisper.logger import Logger
 from whisper.server.base import BaseServer
 from whisper.server.connection import ConnHandle
@@ -43,27 +45,37 @@ class Server(BaseServer, EventLoop):
 
     def run(self, host: str, port: int):
         """Starts the server backend."""
-        error = EventLoop.run_main(self, self.main, host=host, port=port)
-        if error is not None:
-            if isinstance(error, KeyboardInterrupt):
-                self.logger.info("keyboard interrupt")
-            else:
-                self.logger.exception(f"eventloop returned with error: {error!s}, 12")
+        exc_info = EventLoop.run_main(self, self.main, host=host, port=port)
+        if exc_info is not None:
+            self.logger.exception("eventloop returned with error", exc_info=exc_info)
 
     async def main(self, host: str, port: int): # type: ignore[override]
         self.start_server(host, port)
         await EventLoop.main(self)
+        exit_packet = ExitPacket.response(ExitReason.SELF_EXIT, Status.SUCCESS)
+        for address, conn in self.clients:
+            await self.write(conn, exit_packet, self.loop)
+            self.logger.info(f"sent {exit_packet!r} to {address}")
         self.stop_server()
 
     def shutdown(self, sig: int | None = None):
         self.logger.info(f"Received signal: {sig}")
         EventLoop.stop_main(self)
 
-    async def serve_coro(self, conn: ConnHandle):
-        """Connection lifetime."""
+    def serve_coro(self, conn: ConnHandle) -> asyncio.Task:
+        """Handles the connection to be served.."""
         self.clients[conn.address] = conn
-        await self.read_coro(conn)
+        task = self.create_task(self.read_coro(conn))
+        conn.data["read_coro"] = task
+        task.add_done_callback(lambda _: self.close(conn))
+        return task
+
+    def close(self, conn: ConnHandle):
+        task = conn.data.pop("read_coro", None)
+        if task and not task.done():
+            task.cancel()
         self.clients.pop(conn.address)
+        return BaseServer.close(self, conn)
 
     def exception_handler(self, loop, context):
         self.logger.error(f"uncaught exception in eventloop task: {context}")
@@ -80,18 +92,30 @@ class Server(BaseServer, EventLoop):
 
     async def accept_coro(self) -> NoReturn:
         """Accepts incoming connection."""
+        self.logger.info("accept_coro running")
         while True:
             conn = await self.accept(self.loop)
             self.create_task(self.serve_coro(conn))
 
     async def read_coro(self, conn: ConnHandle):
         """Reads incoming packets from connection."""
+        self.logger.info(f"read_coro running for {conn.address}")
         while not conn.close:
-            packet = await self.read(conn, self.loop)
-            await self.recvq.put((packet, conn))
+            try:
+                packet = await self.read(conn, self.loop)
+            except struct.error:
+                self.logger.info(f"{conn.address} diconnected")
+                conn.close = True
+            except Exception as ex:
+                self.logger.exception(
+                    f"uncaught exception while serving {conn.address}: {ex}")
+            else:
+                await self.recvq.put((packet, conn))
+        self.logger.info(f"read_coro stopped for {conn.address}")
 
     async def write_coro(self) -> NoReturn:
         """Writes outgoing packet to connnections."""
+        self.logger.info("write_coro running")
         while True:
             packet, conns = await self.sendq.get()
             for conn in conns:
@@ -99,6 +123,7 @@ class Server(BaseServer, EventLoop):
 
     # async def handler_coro(self) -> NoReturn:
     #     """Handles incoming packets from queue and writes outgoing packets to queue."""
+    #     self.logger.info("handler_coro running")
     #     while True:
     #         packet, conn = await self.recvq.get()
     #         handler = self.handler[packet.kind]
@@ -109,7 +134,7 @@ class Server(BaseServer, EventLoop):
     def initial_tasks(self):
         """Initial tasks."""
         return super().initial_tasks() | {
-            ("ConnectionAcceptor", self.accept_coro),
-            ("ResponseWriter", self.write_coro),
-            # ("PacketHandler", self.handler_coro),
+            self.accept_coro,
+            self.write_coro,
+            # self.handler_coro,
         }

@@ -21,7 +21,6 @@ class Dialog(tk.Toplevel, CustomWidget):
         self.transient(master)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
         CustomWidget.__init__(self)
-        self.setup()
 
     def setup(self):
         """Setup widgets and other configurations."""

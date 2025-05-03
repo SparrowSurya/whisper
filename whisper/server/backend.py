@@ -104,7 +104,7 @@ class Server(BaseServer, EventLoop):
         self.logger.info("accept_coro running")
         while True:
             conn = await self.accept(self.loop)
-            self.create_task(self.serve_coro(conn))
+            self.serve_coro(conn)
 
     async def read_coro(self, conn: ConnHandle):
         """Reads incoming packets from connection."""

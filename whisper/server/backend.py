@@ -80,6 +80,15 @@ class Server(BaseServer, EventLoop):
     def exception_handler(self, loop, context):
         self.logger.error(f"uncaught exception in eventloop task: {context}")
 
+    def handle_signals(self):
+        signals = super().handle_signals()
+        self.logger.info(f"handelling signals: {signals}")
+        return signals
+
+    def signal_handler(self, sig = None):
+        self.logger.info(f"received signal: {sig!r}")
+        return super().signal_handler(sig)
+
     async def handle_cancel(self, coro, name: str, *args, **kwargs):
         try:
             await coro(*args, **kwargs)

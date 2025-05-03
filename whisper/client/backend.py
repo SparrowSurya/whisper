@@ -61,7 +61,7 @@ class Client(BaseClient, EventLoop):
     def init_connection(self, username: str):
         """This initialises the client on server side."""
         packet = InitPacket.request(username=username)
-        self.create_task(self.sendq.put(packet), "ConnInitTask")
+        self.schedule(self.sendq.put(packet))
 
     async def read_coro(self):
         """Reads incoming packets from connection."""

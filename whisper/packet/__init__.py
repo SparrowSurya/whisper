@@ -139,7 +139,7 @@ class PacketRegistery:
         packet_dir = pathlib.Path(__file__).parent
         imported_modules = []
         for subdir in packet_dir.iterdir():
-            if subdir.is_dir() and re.fullmatch("^v\d+$", subdir.name):
+            if subdir.is_dir() and re.fullmatch("^v[0-9]+$", subdir.name):
                 module_name = f"{__name__}.{subdir.name}"
                 module = importlib.import_module(module_name)
                 imported_modules.append(module)

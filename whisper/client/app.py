@@ -2,7 +2,6 @@
 The module contains the client application object.
 """
 
-import signal
 import threading
 from typing import Self
 
@@ -63,11 +62,10 @@ class App(Client, MainWindow):
 
     def mainloop(self, n: int = 0):
         """Starts the application."""
-        for sig in self.signals:
-            self.logger.info(f"signal handler attahed: {sig!r}")
-            signal.signal(sig, lambda *_: self.signal_handler(sig))
-        self.logger.info("running mainloop")
+        signals = self.handle_signals()
+        self.logger.info(f"handelling signals: {signals}")
         self.after(1000, self.run)
+        self.logger.info("running mainloop")
         try:
             MainWindow.mainloop(self, n)
         except BaseException as ex:
@@ -94,14 +92,14 @@ class App(Client, MainWindow):
         self.open_connection()
         self.init_connection()
         await Client.main(self)
-        if reason := self.exit_result():
-            await self.write(ExitPacket.request(reason))
+        if reason := self.stop_main_result():
+            await self.write(ExitPacket.request(reason), self.loop)
         self.close_connection()
 
     def shutdown(self, reason: ExitReason | None = None):
         """Safely closes backend thread.."""
         if self.thread.is_alive():
-            self.stop_main(self, reason)
+            self.stop_main(reason)
             self.thread.join()
             self.logger.info(f"{self.thread.name} joined")
         MainWindow.quit(self)
@@ -122,7 +120,6 @@ class App(Client, MainWindow):
 
         dialog = ConnInitFormDialog(self, callback)
         dialog.setup()
-        dialog.pack(fill="x", padx=8, pady=8)
 
     def create_palette(self, palette: Palette) -> _TkPalette:
         """Create palette options from color palette."""

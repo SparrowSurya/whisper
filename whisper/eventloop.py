@@ -37,9 +37,9 @@ class EventLoop:
 
     signals: List[int] = [signal.SIGINT, signal.SIGTERM]
     if sys.platform == "win32":
-        signals.extend((signal.SIGBREAK, signal.CTRL_C_EVENT, signal.CTRL_BREAK_EVENT))
+        signals.extend([signal.SIGBREAK, signal.CTRL_C_EVENT, signal.CTRL_BREAK_EVENT])
     else:
-        signals.append(signal.SIGQUIT)
+        signals.extend([signal.SIGQUIT])
 
     CancelledError = asyncio.CancelledError
 
@@ -60,15 +60,14 @@ class EventLoop:
         """Runs given coroutine in eventloop until finishes. It returns exceptions
         caught during execution if any."""
         asyncio.set_event_loop(self.loop)
-        if threading.current_thread() is threading.main_thread():
-            for sig in self.signals:
-                self.loop.add_signal_handler(sig, lambda: self.signal_handler(sig))
+        self.handle_signals()
         self.loop.set_exception_handler(self.exception_handler)
         if self._stop_event.done():
             self._stop_event = Future()
         try:
             self.loop.run_until_complete(coro(*args, **kwargs))
         except BaseException:
+            self.stop_main()
             return sys.exc_info()
         return None
 
@@ -95,6 +94,32 @@ class EventLoop:
     ) -> asyncio.Task[Any]:
         """Run coroutine in eventloop. Must be called from same thread."""
         return self.loop.create_task(coro, name=name)
+
+    if sys.platform == "win32":
+
+        def _handle_signal(self, sig: signal.Signals):
+            """Signal handler for win32 platforms."""
+            return signal.signal(sig, lambda _t, _f: self.signal_handler(sig))
+
+    else:
+
+        def _handle_signal(self, sig: signal.Signals):
+            """Signal handler for non win32 platforms."""
+            return self.loop.add_signal_handler(sig, lambda: self.signal_handler(sig))
+
+
+    def handle_signals(self) -> List[signal.Signals]:
+        """Attach signal handlers."""
+        signals_attached = []
+        if threading.current_thread() is threading.main_thread():
+            for sig in self.signals:
+                try:
+                    self._handle_signal(sig)
+                except ValueError:
+                    pass
+                else:
+                    signals_attached.append(sig)
+        return signals_attached
 
     def stop_main(self, result: Any = None):
         """This signals the `main` coroutine to finish."""

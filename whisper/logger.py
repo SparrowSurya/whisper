@@ -43,13 +43,5 @@ class Logger(logging.Logger):
     def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func = None,
         extra = None, sinfo = None,
     ):
-        # python version >= 3.12 does not support overriding key in LogRecord
-        # python version <= 3.11 does require all keys and don't handles missing one
-        if sys.version_info.minor <= 11:
-            if extra is None:
-                extra = {}
-            if "taskName" not in extra:
-                extra["taskName"] = "None"
-
         return super().makeRecord(
             name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)

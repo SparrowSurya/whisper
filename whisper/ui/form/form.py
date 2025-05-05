@@ -2,48 +2,64 @@
 This module provides form widget.
 """
 
-import tkinter as tk
-from typing import Dict, Set, Any, Callable
+from typing import Mapping, Any, Set
 
-from .. import Container
-from .base import FormInput
+from .input import AbstractInputField
+from whisper.typing import (
+    FormSubmitCmd as _FormSubmitCmd,
+    FormCancelCmd as _FormCancelCmd,
+    FormResetCmd as _FormResetCmd,
+)
 
 
-class Form(Container):
-    """Custom form widget."""
+class BaseForm:
+    """Base form component."""
 
     def __init__(self,
-        master: tk.Misc,
-        submit_cb: Callable[[Dict[str, Any]], None],
-        **kwargs,
+        submit_cb: _FormSubmitCmd,
+        cancel_cb: _FormCancelCmd | None = None,
+        reset_cb: _FormResetCmd | None = None,
     ):
-        Container.__init__(self, master, **kwargs)
-        self.inputs: Set[FormInput] = set()
         self._submit_cb = submit_cb
+        self._cancel_cb = cancel_cb
+        self._reset_cb = reset_cb
+        self.inputs: Set[AbstractInputField] = set()
 
-    def set_initial_values(self, **values: Any):
-        """Set inital values."""
-        for field in self.inputs:
-            self.field.initial_value = values[field.name]
+    def setup(self,
+        values: Mapping[str, Any] | None = None,
+        errors: Mapping[str, Any] | None = None,
+    ):
+        """setup and configure widgets."""
+        for inp in self.inputs:
+            value = values.get(inp._name, None) if values else None
+            if value is not None:
+                inp.set_value(value=value)
+            error = errors.get(inp._name, None) if errors else None
+            if error is not None:
+                inp.set_error(error=error)
+
+    def values(self) -> Mapping[str, Any]:
+        """Provides the values from inputs."""
+        return {inp._name: inp.get_value() for inp in self.inputs}
 
     def validate(self) -> bool:
-        """Validates input fields."""
-        return all(widget.validate() for widget in self.inputs)
-
-    def collect_values(self) -> Dict[str, Any]:
-        """Read values from input fields."""
-        return {widget.name: widget.value for widget in self.inputs}
+        """Validate all inputs."""
+        return all(inp.validate() for inp in self.inputs)
 
     def submit_form(self):
-        """Submit form if validation success."""
+        """Submit the form."""
         if self.validate():
-            values = self.collect_values()
-            self._submit_cb(**values)
+            values = self.values()
+            self._callback(**values)
 
-    def reset(self):
-        """Resets form input."""
-        for widget in self.inputs:
-            widget.reset(use_initial_value=True)
+    def cancel_form(self):
+        """Cancel the form."""
+        if callable(self._cancel_cb):
+            self._cancel_cb()
 
-    def cancel(self):
-        """Cancel the form submission."""
+    def reset_form(self):
+        """Reset form inputs."""
+        values = self._reset_cb() if callable(self._reset_cb) else None
+        for inp in self.inputs:
+            value = values.get(inp._name, None) if values else None
+            inp.reset(value=value)

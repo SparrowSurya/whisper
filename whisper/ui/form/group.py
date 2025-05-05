@@ -37,7 +37,7 @@ class TextFieldGroup(Container, AbstractInputField):
                                     validators=validators)
 
     def setup(self):
-        self.label.label.config(justofy="W")
+        self.label.text.config(anchor="w")
         self.label.setup()
         self.input.setup()
         self.error.setup()
@@ -65,9 +65,6 @@ class TextFieldGroup(Container, AbstractInputField):
     def unset_error(self):
         self.input.unset_error()
         self.error.clear_error()
-
-    def validate(self) -> bool:
-        return self.input.validate()
 
     def reset(self, value: str | None = None):
         self.input.reset("" if value is None else value)

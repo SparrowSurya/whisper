@@ -4,18 +4,28 @@ This module provides connection initilization form dialog.
 
 from typing import Callable, Dict, Any
 
-from whisper.ui import Dialog
-from whisper.ui.form import Form, FormSubmit, FormTextInputGroup
-from whisper.typing import Misc as _Misc
+from whisper.ui import Container, Dialog
+from whisper.ui.form import BaseForm, FormSubmitButton, TextFieldGroup, validators
+from whisper.typing import (
+    Misc as _Misc,
+    FormSubmitCmd as _FormSubmitCmd,
+)
 
 
-class ConnInitForm(Form): # WIP
+class ConnInitForm(Container, BaseForm):
+    """Form component for connection initilization.
 
-    def __init__(self, master: _Misc, submit_cb, **kwargs):
-        super().__init__(master, submit_cb, width=200, **kwargs)
+    Inputs:
+    * username
+    """
 
-        self.username = FormTextInputGroup(self, "Username", name="username")
-        self.submit = FormSubmit(self, form=self, text="Submit", borderwidth=1, border=1)
+    def __init__(self, master: _Misc, submit_cb: _FormSubmitCmd, **kwargs):
+        Container.__init__(self, master, width=200, **kwargs)
+        BaseForm.__init__(self, submit_cb=submit_cb)
+
+        self.username = TextFieldGroup(self, name="username", label="Username",
+                                       required="*", validators=[validators.required])
+        self.submit = FormSubmitButton(self, form=self, text="Submit", borderwidth=1, border=1)
 
         self.inputs.add(self.username)
 
@@ -27,7 +37,6 @@ class ConnInitForm(Form): # WIP
         self.username.error.pack(side="left", pady=(0, 8))
         self.username.pack(fill="x")
         self.submit.pack(side="right")
-        self.username.error.show("This field is required")
 
 
 class ConnInitFormDialog(Dialog):
@@ -38,8 +47,8 @@ class ConnInitFormDialog(Dialog):
         self.title("Connect to server ...")
         self.minsize(260, 120)
 
-        self.form = ConnInitForm(self, submit_cb)
-        self.form.pack(fill="x", padx=16, pady=16)
+        self.form = ConnInitForm(self, submit_cb, padx=16, pady=16)
+        self.form.pack(fill="x")
         self.set_theme(self.app.setting.theme)
 
     def setup(self):

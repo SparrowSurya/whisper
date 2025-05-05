@@ -50,7 +50,7 @@ class BaseForm:
         """Submit the form."""
         if self.validate():
             values = self.values()
-            self._callback(**values)
+            self._submit_cb(**values)
 
     def cancel_form(self):
         """Cancel the form."""

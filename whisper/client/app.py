@@ -19,7 +19,6 @@ from whisper.typing import (
     TkPalette as _TkPalette,
 )
 
-# TODO - this file fails mypy checking
 
 class App(Client, MainWindow):
     """Main application (Frontend + Backend).

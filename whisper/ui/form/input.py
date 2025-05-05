@@ -69,8 +69,9 @@ class AbstractInputField(abc.ABC, Generic[_V]):
 
     def validate(self) -> bool:
         """validate widget input value."""
+        value = self.get_value()
         for validator in self._validators or []:
-            success, value = validator(self.get_value())
+            success, value = validator(value)
             if not success:
                 self.set_error(value)
                 return False

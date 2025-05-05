@@ -2,9 +2,8 @@
 This package provides form and related widgets.
 """
 
-from .form import Form  # noqa: F401
-from .labels import FormLabel, FormErrorLabel  # noqa: F401
-from .inputs import FormTextInput  # noqa: F401
-from .actions import FormSubmit, FormCancel, FormReset  # noqa: F401
-from .base import FormInput, FormAction, FormActionType  # noqa: F401
-from .groups import FormTextInputGroup  # noqa: F401
+from .form import BaseForm  # noqa: F401
+from .label import FormLabel, FormErrorLabel  # noqa: F401
+from .input import AbstractInputField, TextField  # noqa: F401
+from .action import FormSubmitButton, FormCancelButton, FormResetButton  # noqa: F401
+from .group import TextFieldGroup  # noqa: F401

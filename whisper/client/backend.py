@@ -12,11 +12,11 @@ from whisper.client.settings import Config
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
 from whisper.packet.v1 import InitPacket
+from whisper.common import Address
 from whisper.logger import Logger
 from whisper.typing import (
     TcpClient as _TcpClient,
     AsyncQueue as _AsyncQueue,
-    Address as _Address,
 )
 
 
@@ -29,7 +29,7 @@ class Client(BaseClient, EventLoop):
         """The `conn` object is used to connect with remote server."""
         BaseClient.__init__(self, logger, conn)
         EventLoop.__init__(self)
-        self.config = config
+        self.cfg = config
 
     @cached_property
     def recvq(self) -> _AsyncQueue[Packet]:
@@ -41,11 +41,11 @@ class Client(BaseClient, EventLoop):
         """Packet send to server."""
         return asyncio.Queue()
 
-    def server_address(self) ->_Address:
+    def server_address(self) -> Address:
         """Provides remote server address depending upon the connection."""
         if self.is_connected:
             return BaseClient.server_address(self)
-        return self.config.host, self.config.port
+        return self.cfg.host, self.cfg.port
 
     def open_connection(self):
         """Connect to remote server."""

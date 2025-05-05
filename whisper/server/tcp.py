@@ -5,8 +5,8 @@ This module provides connection class for server.
 import socket
 from typing import Tuple
 
+from whisper.common import Address
 from whisper.typing import (
-    Address as _Address,
     EventLoop as _EventLoop,
 )
 
@@ -23,7 +23,7 @@ class TcpServer:
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def address(self) -> _Address:
+    def address(self) -> Address:
         """Server host address as tuple of hostname and port address. Make sure that
         server is serving before it is called."""
         return self.sock.getsockname()
@@ -37,7 +37,7 @@ class TcpServer:
         """Stop the server."""
         self.sock.close()
 
-    async def accept(self, loop: _EventLoop) -> Tuple[socket.socket, _Address]:
+    async def accept(self, loop: _EventLoop) -> Tuple[socket.socket, Address]:
         """Accepts incoming connection."""
         return await loop.sock_accept(self.sock)  # type: ignore
 

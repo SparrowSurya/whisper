@@ -5,11 +5,11 @@ using packet. It also provide limited support of connection management.
 
 from enum import StrEnum, auto
 
+from whisper.common import Address
 from whisper.packet import Packet
 from whisper.logger import Logger
 from whisper.typing import (
     TcpClient as _TcpClient,
-    Address as _Address,
     EventLoop as _EventLoop
 )
 
@@ -41,7 +41,7 @@ class BaseClient:
         """
         return self.conn_state is ConnState.CONNECTED
 
-    def server_address(self) -> _Address:
+    def server_address(self) -> Address:
         """Provides the connected server address."""
         return self.conn.sock.getpeername()
 

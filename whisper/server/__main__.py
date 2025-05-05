@@ -18,7 +18,7 @@ parser = get_parser(program, "whisper.server cli application")
 args = parser.parse_args(sys.argv[1:])
 
 logfile = LOG_DIR / "server.log"
-log_handlers = [stdout_handler(), file_handler(logfile)]
+log_handlers = [stdout_handler(), file_handler(str(logfile))]
 logger = Logger(APP_NAME, logging.DEBUG, log_handlers)
 logger.debug(f"{program}: {args}")
 

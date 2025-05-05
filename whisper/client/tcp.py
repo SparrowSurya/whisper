@@ -4,8 +4,8 @@ This module provides tcp connection object for client.
 
 import socket
 
+from whisper.common import Address
 from whisper.typing import (
-    Address as _Address,
     EventLoop as _EventLoop,
 )
 
@@ -23,7 +23,7 @@ class TcpClient:
         self.sock.setblocking(False)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def address(self) -> _Address:
+    def address(self) -> Address:
         """
         Provides client address as tuple of hostname and port address. Make sure that
         client is connected before calling it.

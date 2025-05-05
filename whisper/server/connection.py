@@ -5,7 +5,7 @@ This module provides a handler class to manage client connections and their data
 import socket
 from typing import Dict, Any
 
-from whisper.typing import Address as _Address
+from whisper.common import Address
 
 
 class ConnHandle:
@@ -13,7 +13,7 @@ class ConnHandle:
 
     __slots__ = ("sock", "address", "data", "serve", "close")
 
-    def __init__(self, sock: socket.socket, addr: _Address, data: Dict[str, Any]):
+    def __init__(self, sock: socket.socket, addr: Address, data: Dict[str, Any]):
         self.sock = sock
         self.address = addr
         self.data = data

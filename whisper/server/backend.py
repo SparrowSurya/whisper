@@ -8,6 +8,7 @@ from functools import cached_property
 from typing import Iterable, Dict, Tuple, NoReturn
 
 from whisper.eventloop import EventLoop
+from whisper.common import Address
 from whisper.packet import Packet
 from whisper.packet.v1 import ExitPacket, ExitReason, Status
 from whisper.logger import Logger
@@ -17,7 +18,6 @@ from whisper.server.connection import ConnHandle
 from whisper.typing import (
     TcpServer as _TcpServer,
     AsyncQueue as _AsyncQueue,
-    Address as _Address,
 )
 
 
@@ -30,7 +30,7 @@ class Server(BaseServer, EventLoop):
         EventLoop.__init__(self)
 
         self.logger = logger
-        self.clients: Dict[_Address, ConnHandle] = {}
+        self.clients: Dict[Address, ConnHandle] = {}
         # self.handlers = {handler.packet_type: handler(self) for handler in handlers}
 
     @cached_property

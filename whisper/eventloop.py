@@ -97,18 +97,18 @@ class EventLoop:
 
     if sys.platform == "win32":
 
-        def _handle_signal(self, sig: signal.Signals):
+        def _handle_signal(self, sig: signal.Signals | int):
             """Signal handler for win32 platforms."""
             return signal.signal(sig, lambda _t, _f: self.signal_handler(sig))
 
     else:
 
-        def _handle_signal(self, sig: signal.Signals):
+        def _handle_signal(self, sig: signal.Signals | int):
             """Signal handler for non win32 platforms."""
             return self.loop.add_signal_handler(sig, lambda: self.signal_handler(sig))
 
 
-    def handle_signals(self) -> List[signal.Signals]:
+    def handle_signals(self) -> List[signal.Signals | int]:
         """Attach signal handlers."""
         signals_attached = []
         if threading.current_thread() is threading.main_thread():

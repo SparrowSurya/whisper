@@ -117,7 +117,7 @@ class App(Client, MainWindow):
                 signals.append(sig)
         return signals
 
-    def signal_handler(self, sig: int):
+    def signal_handler(self, sig: int): # type: ignore[override]
         """Handles signal passed to application."""
         self.logger.info(f"received signal: {sig!r}")
         self.shutdown(ExitReason.FORCE_EXIT)

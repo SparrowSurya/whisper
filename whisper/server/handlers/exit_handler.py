@@ -17,7 +17,7 @@ class ExitHandler(RequestPacketHandler):
     def handle(self,
         conn: ConnHandle,
         *args,
-        reason: ExitReason = ExitReason.UNKNOWN,
+        reason: ExitReason | None = None,
         **kwargs,
     ):
         """Read reason and provide response."""

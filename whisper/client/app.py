@@ -2,6 +2,7 @@
 The module contains the client application object.
 """
 
+import signal
 import threading
 from typing import Self
 
@@ -104,6 +105,17 @@ class App(Client, MainWindow):
             self.logger.info(f"{self.thread.name} joined")
         MainWindow.quit(self)
         self.logger.info("mainloop exited")
+
+    def handle_signals(self):
+        signals = []
+        for sig in self.signals:
+            try:
+                signal.signal(sig, lambda _s, _f: self.shutdown(ExitReason.FORCE_EXIT))
+            except ValueError:
+                pass
+            else:
+                signals.append(sig)
+        return signals
 
     def signal_handler(self, sig: int):
         """Handles signal passed to application."""

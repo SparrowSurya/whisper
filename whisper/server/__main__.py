@@ -6,7 +6,7 @@ import sys
 import logging
 
 from whisper.settings import APP_NAME, LOG_DIR
-from whisper.logger import Logger, stdout_handler, file_handler
+from whisper.logger import setup_logging, cleanup_logging
 from whisper.packet import PacketRegistery
 from .backend import Server
 from .tcp import TcpServer
@@ -18,15 +18,17 @@ parser = get_parser(program, "whisper.server cli application")
 args = parser.parse_args(sys.argv[1:])
 
 logfile = LOG_DIR / "server.log"
-log_handlers = [stdout_handler(), file_handler(str(logfile))]
-logger = Logger(APP_NAME, logging.DEBUG, log_handlers)
-logger.debug(f"{program}: {args}")
+setup_logging(level=logging.DEBUG, logfile=logfile)
+
+logger = logging.getLogger(__name__)
+logger.debug(f"{program} invoked: {args}")
+
+PacketRegistery.ensure_regisered()
+server = Server(conn=TcpServer())
 
 try:
-    for module in PacketRegistery.ensure_regisered():
-        logger.debug(f"dynamically imported {module.__name__}")
-except Exception as ex:
-    logger.exception(f"error occured while ensuring packet registeration: {ex}")
-else:
-    server = Server(logger=logger, conn=TcpServer())
     server.run(host=args.host, port=args.port)
+except Exception as ex:
+    logger.exception(f"uncaught exception in {program}: {ex}")
+else:
+    cleanup_logging()

@@ -3,6 +3,7 @@ The module contains the client application object.
 """
 
 import signal
+import logging
 import threading
 from typing import Self
 
@@ -12,13 +13,14 @@ from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
 from whisper.components.root import Root
 from whisper.components.conn_init_form import ConnInitFormDialog
-from whisper.logger import Logger
 from whisper.packet.v1 import ExitPacket, ExitReason
 from whisper.typing import (
     TcpClient as _TcpClient,
     TkPalette as _TkPalette,
 )
 
+
+logger = logging.getLogger(__name__)
 
 class App(Client, MainWindow):
     """Main application (Frontend + Backend).
@@ -29,11 +31,11 @@ class App(Client, MainWindow):
     Use `mainloop` to run the application.
     """
 
-    def __init__(self, title: str, logger: Logger, setting: Setting, conn: _TcpClient):
+    def __init__(self, title: str, setting: Setting, conn: _TcpClient):
         """The `conn` object is used to connect with the servers."""
         MainWindow.__init__(self)
         self.setting = setting
-        Client.__init__(self, logger=logger, config=setting.cfg, conn=conn)
+        Client.__init__(self, config=setting.cfg, conn=conn)
         self.root = Root(self)
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
         self.title(title)
@@ -62,30 +64,32 @@ class App(Client, MainWindow):
 
     def mainloop(self, n: int = 0):
         """Starts the application."""
-        signals = self.handle_signals()
-        self.logger.info(f"handelling signals: {signals}")
+        self.handle_signals()
         self.after(1000, self.run)
-        self.logger.info("running mainloop")
+        logger.info("running mainloop")
         try:
             MainWindow.mainloop(self, n)
         except BaseException as ex:
-            self.logger.exception(str(ex))
+            logger.exception(str(ex))
             self.shutdown(ExitReason.EXCEPTION)
+        finally:
+            logger.info("mainloop exited")
 
     def _run_backend(self):
         """Starts the backend. This should be running inside `App.thread`."""
-        exc_info = self.run_main(self.main)
-        if exc_info is not None:
-            self.logger.exception("eventloop returned with error", exc_info=exc_info)
+        if self.run_main(self.main) is None:
+            logger.info("eventloop exited")
+        else:
+            logger.exception("eventloop exited due to exception")
 
     def run(self):
         """Starts the backend thread."""
         tname = self.thread.name
         if not self.thread.is_alive():
             self.thread.start()
-            self.logger.info(f"{tname} running")
+            logger.info(f"{tname} running")
         else:
-            self.logger.warning(f"{tname} is already running")
+            logger.warning(f"{tname} is already running")
 
     async def main(self):
         """Backend lifecycle."""
@@ -93,32 +97,36 @@ class App(Client, MainWindow):
         self.init_connection()
         await Client.main(self)
         if reason := self.stop_main_result():
-            await self.write(ExitPacket.request(reason), self.loop)
+            packet = ExitPacket.request(reason)
+            await self.write(packet, self.loop)
         self.close_connection()
 
     def shutdown(self, reason: ExitReason | None = None):
         """Safely closes backend thread.."""
+        logger.info("shutting down application")
         if self.thread.is_alive():
+            logger.debug("closing backend")
             self.stop_main(reason)
             self.thread.join()
-            self.logger.info(f"{self.thread.name} joined")
+            logger.info(f"{self.thread.name} joined")
         MainWindow.quit(self)
-        self.logger.info("mainloop exited")
 
     def handle_signals(self):
         signals = []
-        for sig in self.signals:
-            try:
-                signal.signal(sig, lambda _s, _f: self.shutdown(ExitReason.FORCE_EXIT))
-            except ValueError:
-                pass
-            else:
-                signals.append(sig)
+        if threading.current_thread() is threading.main_thread():
+            for sig in self.signals:
+                try:
+                    signal.signal(sig, lambda _s, _f: self.shutdown(ExitReason.FORCE_EXIT))
+                except Exception:
+                    logger.exception(f"failed to attach signal handler: {sig}")
+                else:
+                    logger.debug(f"attached signal handler: {sig}")
+                    signals.append(sig)
         return signals
 
     def signal_handler(self, sig: int): # type: ignore[override]
         """Handles signal passed to application."""
-        self.logger.info(f"received signal: {sig!r}")
+        logger.info(f"received signal: {sig}")
         self.shutdown(ExitReason.FORCE_EXIT)
 
     def init_connection(self): # TODO

@@ -4,6 +4,7 @@ This module provides the server backend class.
 
 import struct
 import asyncio
+import logging
 from functools import cached_property
 from typing import Iterable, Dict, Tuple, NoReturn
 
@@ -11,7 +12,6 @@ from whisper.eventloop import EventLoop
 from whisper.common import Address
 from whisper.packet import Packet
 from whisper.packet.v1 import ExitPacket, ExitReason, Status
-from whisper.logger import Logger
 from whisper.server.base import BaseServer
 from whisper.server.connection import ConnHandle
 # from .handlers import handlers
@@ -21,15 +21,16 @@ from whisper.typing import (
 )
 
 
+logger = logging.getLogger(__name__)
+
 class Server(BaseServer, EventLoop):
     """This class provides asynchronouse server backend for the chat applications."""
 
-    def __init__(self, logger: Logger, conn: _TcpServer):
+    def __init__(self, conn: _TcpServer):
         """The connection object is used to accept client connections."""
-        BaseServer.__init__(self, logger, conn)
+        BaseServer.__init__(self, conn)
         EventLoop.__init__(self)
 
-        self.logger = logger
         self.clients: Dict[Address, ConnHandle] = {}
         # self.handlers = {handler.packet_type: handler(self) for handler in handlers}
 
@@ -45,9 +46,10 @@ class Server(BaseServer, EventLoop):
 
     def run(self, host: str, port: int):
         """Starts the server backend."""
-        exc_info = EventLoop.run_main(self, self.main, host=host, port=port)
-        if exc_info is not None:
-            self.logger.exception("eventloop returned with error", exc_info=exc_info)
+        if EventLoop.run_main(self, self.main, host=host, port=port) is None:
+            logger.info("eventloop exited")
+        else:
+            logger.exception("eventloop exited due to exception")
 
     async def main(self, host: str, port: int): # type: ignore[override]
         self.start_server(host, port)
@@ -55,11 +57,11 @@ class Server(BaseServer, EventLoop):
         exit_packet = ExitPacket.response(ExitReason.SELF_EXIT, Status.SUCCESS)
         for address, conn in self.clients:
             await self.write(conn, exit_packet, self.loop)
-            self.logger.info(f"sent {exit_packet!r} to {address}")
+            logger.info(f"sent {exit_packet!r} to {address}")
         self.stop_server()
 
     def shutdown(self, sig: int | None = None):
-        self.logger.info(f"Received signal: {sig}")
+        logger.info(f"received signal: {sig}")
         EventLoop.stop_main(self)
 
     def serve_coro(self, conn: ConnHandle) -> asyncio.Task:
@@ -77,62 +79,73 @@ class Server(BaseServer, EventLoop):
         self.clients.pop(conn.address)
         return BaseServer.close(self, conn)
 
-    def exception_handler(self, loop, context):
-        self.logger.error(f"uncaught exception in eventloop task: {context}")
-
-    def handle_signals(self):
-        signals = super().handle_signals()
-        self.logger.info(f"handelling signals: {signals}")
-        return signals
-
-    def signal_handler(self, sig = None):
-        self.logger.info(f"received signal: {sig!r}")
-        return super().signal_handler(sig)
-
     async def handle_cancel(self, coro, name: str, *args, **kwargs):
         try:
             await coro(*args, **kwargs)
         except self.CancelledError:
-            self.logger.info(f"{name} cancelled")
+            logger.info(f"{name} cancelled")
         except KeyboardInterrupt:
-            self.logger.info(f"keyboard interrupt at {name}")
+            logger.info(f"keyboard interrupt at {name}")
         except Exception as ex:
-            self.logger.exception(f"error occured in {name}: {ex}")
+            logger.exception(f"error occured in {name}: {ex}")
 
     async def accept_coro(self) -> NoReturn:
         """Accepts incoming connection."""
-        self.logger.info("accept_coro running")
-        while True:
-            conn = await self.accept(self.loop)
-            self.serve_coro(conn)
+        logger.info("accept_coro running")
+        run = True
+        while run:
+            try:
+                conn = await self.accept(self.loop)
+            except self.CancelledError:
+                run = False
+                logger.info("accept_coro cancelled")
+            except Exception:
+                run = False
+                logger.exception("exception occure while running accept_coro")
+            else:
+                self.serve_coro(conn)
+        logger.info("accept_coro exited")
 
     async def read_coro(self, conn: ConnHandle):
         """Reads incoming packets from connection."""
-        self.logger.info(f"read_coro running for {conn.address}")
+        logger.info(f"read_coro running for {conn.address}")
         while not conn.close:
             try:
                 packet = await self.read(conn, self.loop)
             except struct.error:
-                self.logger.info(f"{conn.address} diconnected")
                 conn.close = True
+                logger.info(f"{conn.address} diconnected")
+            except self.CancelledError:
+                conn.close = True
+                logger.info(f"read_coro task cancelled for {conn.address}")
             except Exception as ex:
-                self.logger.exception(
+                logger.exception(
                     f"uncaught exception while serving {conn.address}: {ex}")
             else:
                 await self.recvq.put((packet, conn))
-        self.logger.info(f"read_coro stopped for {conn.address}")
+        logger.info(f"read_coro stopped for {conn.address}")
 
     async def write_coro(self) -> NoReturn:
         """Writes outgoing packet to connnections."""
-        self.logger.info("write_coro running")
-        while True:
+        logger.info("write_coro running")
+        run = True
+        while run:
             packet, conns = await self.sendq.get()
             for conn in conns:
-                await self.write(conn, packet, self.loop)
+                try:
+                    await self.write(conn, packet, self.loop)
+                except self.CancelledError:
+                    run = False
+                    logger.info("write_coro task cancelled")
+                except Exception:
+                    run = False
+                    conn.close = True
+                    logger.exception("exception occure whiel running write_coro")
+        logger.info("write_coro exited")
 
     # async def handler_coro(self) -> NoReturn:
     #     """Handles incoming packets from queue and writes outgoing packets to queue."""
-    #     self.logger.info("handler_coro running")
+    #     logger.info("handler_coro running")
     #     while True:
     #         packet, conn = await self.recvq.get()
     #         handler = self.handler[packet.kind]

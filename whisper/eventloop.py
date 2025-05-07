@@ -5,11 +5,14 @@ graceful exit.
 
 import sys
 import signal
+import logging
 import asyncio
 import threading
 from concurrent.futures import Future
 from typing import List, Dict, Set, Any, Callable, Coroutine, ParamSpec
 
+
+logger = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 
@@ -37,7 +40,7 @@ class EventLoop:
 
     signals: List[int] = [signal.SIGINT, signal.SIGTERM]
     if sys.platform == "win32":
-        signals.extend([signal.SIGBREAK, signal.CTRL_C_EVENT, signal.CTRL_BREAK_EVENT])
+        signals.extend([signal.SIGBREAK])
     else:
         signals.extend([signal.SIGQUIT])
 
@@ -56,7 +59,7 @@ class EventLoop:
         coro: Callable[P, Coroutine[Any, Any, Any]],
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> Any:
+    ) -> BaseException | None:
         """Runs given coroutine in eventloop until finishes. It returns exceptions
         caught during execution if any."""
         asyncio.set_event_loop(self.loop)
@@ -64,11 +67,13 @@ class EventLoop:
         self.loop.set_exception_handler(self.exception_handler)
         if self._stop_event.done():
             self._stop_event = Future()
+        logger.debug("eventloop running ...")
         try:
             self.loop.run_until_complete(coro(*args, **kwargs))
-        except BaseException:
+        except BaseException as ex:
+            logger.exception("an error occured while running eventloop")
             self.stop_main()
-            return sys.exc_info()
+            return ex
         return None
 
     async def main(self) -> List[Future[Any | BaseException]]:
@@ -82,10 +87,12 @@ class EventLoop:
         ]
         for task in tasks:
             task.cancel()
+            logger.debug(f"cancelled task: {task}")
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     def schedule(self, coro: Coroutine[Any, Any, Any]) -> Future[Any]:
-        """Runs coroutine from other threads.."""
+        """Runs coroutine from other threads."""
+        logger.debug(f"scheduling coro: {coro}")
         return asyncio.run_coroutine_threadsafe(coro, self.loop)
 
     def create_task(self,
@@ -93,19 +100,22 @@ class EventLoop:
         name: str | None = None,
     ) -> asyncio.Task[Any]:
         """Run coroutine in eventloop. Must be called from same thread."""
+        logger.debug(f"create task[{name}]: {coro}")
         return self.loop.create_task(coro, name=name)
 
     if sys.platform == "win32":
 
         def _handle_signal(self, sig: signal.Signals | int):
             """Signal handler for win32 platforms."""
-            return signal.signal(sig, lambda _t, _f: self.signal_handler(sig))
+            signal.signal(sig, lambda _t, _f: self.signal_handler(sig))
+            logger.info(f"attached signal handler: {sig}")
 
     else:
 
         def _handle_signal(self, sig: signal.Signals | int):
             """Signal handler for non win32 platforms."""
-            return self.loop.add_signal_handler(sig, lambda: self.signal_handler(sig))
+            self.loop.add_signal_handler(sig, lambda: self.signal_handler(sig))
+            logger.debug(f"attached signal handler to eventloop: {sig}")
 
 
     def handle_signals(self) -> List[signal.Signals | int]:
@@ -115,8 +125,8 @@ class EventLoop:
             for sig in self.signals:
                 try:
                     self._handle_signal(sig)
-                except ValueError:
-                    pass
+                except Exception:
+                    logger.exception(f"failed to attach handler for signal: {sig}")
                 else:
                     signals_attached.append(sig)
         return signals_attached
@@ -124,10 +134,12 @@ class EventLoop:
     def stop_main(self, result: Any = None):
         """This signals the `main` coroutine to finish."""
         if not self._stop_event.done():
+            logger.info(f"setting exit main result: {result}")
             self._stop_event.set_result(result)
 
     def signal_handler(self, sig: int | None = None):
         """Handle the received signal."""
+        logger.info(f"received signal: {sig}")
         self.stop_main()
 
     def exception_handler(self,
@@ -135,6 +147,7 @@ class EventLoop:
         context: Dict[str, Any],
     ):
         """Handle exception in running task."""
+        logger.error(f"uncaught exception in {loop}: {context}")
         self.stop_main()
 
     def initial_tasks(self) -> Set[Callable[[], Coroutine[Any, Any, None]]]:

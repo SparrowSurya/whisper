@@ -4,7 +4,7 @@ This module provides threadsafe logger for the application.
 
 import sys
 import logging
-from typing import List
+from typing import Dict
 
 
 simple = "{levelname}: {message}"
@@ -15,33 +15,43 @@ simple_fmt = logging.Formatter(fmt=simple, style='{')
 column_fmt = logging.Formatter(fmt=column, style='{')
 detail_fmt = logging.Formatter(fmt=detail, style='{')
 
-
-def stdout_handler() -> logging.Handler:
-    """Provides stdout handler for terminal."""
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(column_fmt)
-    handler.setLevel(logging.DEBUG)
-    return handler
+_handlers: Dict[str, logging.Handler] = {}
 
 
-def file_handler(filepath: str) -> logging.Handler:
-    """Provides file handler for storage."""
-    handler = logging.FileHandler(filepath)
-    handler.setFormatter(detail_fmt)
-    handler.setLevel(logging.DEBUG)
-    return handler
+def setup_logging(level: int = logging.DEBUG, logfile: str | None = None):
+    """setup root logger and respective handlers."""
+    global _handlers
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    while root.handlers:
+        handler = root.handlers[0]
+        root.removeHandler(handler)
+
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_handler.setFormatter(column_fmt)
+    stdout_handler.setLevel(level)
+    root.addHandler(stdout_handler)
+    _handlers["stdout"] = stdout_handler
+
+    if logfile is not None:
+        file_handler = logging.FileHandler(logfile)
+        file_handler.setFormatter(detail_fmt)
+        file_handler.setLevel(level)
+        root.addHandler(file_handler)
+        _handlers["file"] = file_handler
 
 
-class Logger(logging.Logger):
-    """Custom application logger,"""
+def cleanup_logging():
+    """free captured resources and close handlers."""
+    global _handlers
 
-    def __init__(self, name: str, level: int, handlers: List[logging.Handler]):
-        super().__init__(name, level)
-        for handler in handlers:
-            self.addHandler(handler)
+    stdout_handler = _handlers.pop("stdout", None)
+    if stdout_handler:
+        stdout_handler.close()
 
-    def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func = None,
-        extra = None, sinfo = None,
-    ):
-        return super().makeRecord(
-            name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)
+    file_handler = _handlers.pop("file", None)
+    if file_handler:
+        file_handler.close()
+
+    assert len(_handlers.items()) == 0, f"unclosed handlers: {_handlers}"

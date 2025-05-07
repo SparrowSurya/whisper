@@ -7,7 +7,7 @@ import logging
 
 from whisper.settings import APP_NAME, LOG_DIR
 from whisper.ui.theme import Palette, Theme
-from whisper.logger import Logger, stdout_handler, file_handler
+from whisper.logger import setup_logging, cleanup_logging
 from whisper.packet import PacketRegistery
 from .app import App
 from .tcp import TcpClient
@@ -20,9 +20,10 @@ parser = get_parser(program, "whisper.client application")
 args = parser.parse_args(sys.argv[1:])
 
 logfile = LOG_DIR / "client.log"
-log_handlers = [stdout_handler(), file_handler(str(logfile))]
-logger = Logger(program, logging.DEBUG, log_handlers)
-logger.debug(f"{program}: {args}")
+setup_logging(level=logging.DEBUG, logfile=logfile)
+
+logger = logging.getLogger(__name__)
+logger.debug(f"{program} invoked: {args}")
 
 config = Config(
     host=args.host,
@@ -75,11 +76,12 @@ theme = Theme(
 setting = Setting(config, theme)
 setting.data["username"] = args.user
 
+PacketRegistery.ensure_regisered()
+app = App(APP_NAME, setting=setting, conn=TcpClient())
+
 try:
-    for module in PacketRegistery.ensure_regisered():
-        logger.debug(f"dynamically imported {module.__name__}")
-except Exception as ex:
-    logger.exception(f"error occured while ensuring packet registeration: {ex}")
-else:
-    app = App(APP_NAME, logger=logger, setting=setting, conn=TcpClient())
     app.mainloop()
+except Exception as ex:
+    logger.exception(f"uncaught exception in {program}: {ex}")
+else:
+    cleanup_logging()

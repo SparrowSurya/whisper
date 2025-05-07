@@ -5,11 +5,14 @@ This modules provies the packet used for communication between client and server
 import re
 import abc
 import struct
+import logging
 import pathlib
 import importlib
 from types import ModuleType
 from typing import Any, Awaitable, Callable, Dict, List, Tuple, Type
 
+
+logger = logging.getLogger(__name__)
 
 class Packet(metaclass=abc.ABCMeta):
     """
@@ -118,8 +121,13 @@ class PacketRegistery:
         >>> class PacketV1(Packet):
         >>>     ...
         """
-        PacketRegistery.validate(packet)
+        try:
+            PacketRegistery.validate(packet)
+        except Exception:
+            logger.exception(f"packet validation failed: {packet}")
+
         PacketRegistery._packets[packet.version()] = packet
+        logger.info(f"registered packet: {packet!r}")
         return packet
 
     @staticmethod
@@ -142,5 +150,6 @@ class PacketRegistery:
             if subdir.is_dir() and re.fullmatch("^v[0-9]+$", subdir.name):
                 module_name = f"{__name__}.{subdir.name}"
                 module = importlib.import_module(module_name)
+                logger.debug(f"imported module: {module_name}")
                 imported_modules.append(module)
         return imported_modules

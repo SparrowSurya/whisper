@@ -3,6 +3,7 @@ This modules provides packet version 1 and related objects.
 """
 
 import struct
+import logging
 from enum import IntEnum, auto
 from functools import cached_property
 from typing import Tuple, Dict, Type, Awaitable, Callable
@@ -17,6 +18,8 @@ __all__ = (
     "PacketV1Registery",
 )
 
+
+logger = logging.getLogger(__name__)
 
 class PacketType(IntEnum):
     """Packet types for `PacketV1`."""
@@ -78,10 +81,11 @@ class PacketV1(Packet):
         size_limit = self.data_size_limit
         data_size = len(self.data)
         if data_size > size_limit:
-            raise ValueError(
+            msg = (
                 f"data size limit exceeded: limit={(size_limit/1024):.0}KB "
-                f"got {(data_size/1024):.2}KB"
-            )
+                f"got {(data_size/1024):.2}KB")
+            logger.error(msg)
+            raise ValueError(msg)
 
         version = super().to_stream()
         type_ = struct.pack("B", self.type)
@@ -148,8 +152,13 @@ class PacketV1Registery:
         >>> class MyPacket(PacketV1):
         >>>     ...
         """
-        PacketV1Registery.validate(handler)
+        try:
+            PacketV1Registery.validate(handler)
+        except Exception:
+            logger.exception(f"packetv1 handler validation failed: {handler}")
+
         PacketV1Registery._handlers[handler.packet_type()] = handler
+        logger.debug(f"registered packetv1 handler: {handler}")
         return handler
 
     @staticmethod

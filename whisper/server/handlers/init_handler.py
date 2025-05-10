@@ -9,10 +9,10 @@ from typing import Tuple
 
 from whisper.packet.v1 import PacketType, InitPacket, Status
 from whisper.server.connection import ConnHandle
-from .base import RequestPacketHandler
+from .base import PacketV1RequestHandler
 
 
-class InitHandler(RequestPacketHandler):
+class InitHandler(PacketV1RequestHandler):
     """Handles init packet request."""
 
     username_regex = re.compile("^[a-zA-Z0-9_@-]{3, 15}$")
@@ -24,8 +24,8 @@ class InitHandler(RequestPacketHandler):
     charset = string.ascii_letters + string.digits
     keylen = 8
 
-    @classmethod
-    def packet_type(cls):
+    @staticmethod
+    def packet_type():
         return PacketType.INIT
 
     def handle(self, conn: ConnHandle, username: str, *args, **kwargs) -> InitPacket:

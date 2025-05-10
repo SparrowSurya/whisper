@@ -1,17 +1,17 @@
 """
-This module provides exit packet request handler.
+This module provides exit packet-v1 request handler.
 """
 
 from whisper.packet.v1 import PacketType, ExitReason
 from whisper.server.connection import ConnHandle
-from .base import RequestPacketHandler
+from .base import PacketV1RequestHandler
 
 
-class ExitHandler(RequestPacketHandler):
+class ExitHandler(PacketV1RequestHandler):
     """Handles exit packet request."""
 
-    @classmethod
-    def packet_type(cls):
+    @staticmethod
+    def packet_type():
         return PacketType.EXIT
 
     def handle(self,

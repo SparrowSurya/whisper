@@ -1,16 +1,16 @@
 """
-This module provide base response handler for client.
+This module provide abstract pacekt-v1 response handler for client.
 """
 
 from typing import Any
 
-from whisper.handler import AbstractPacketHandler
+from whisper.handler import PacketV1Handler
 
 
-class ResponsePacketHandler(AbstractPacketHandler):
+class PacketV1ResponseHandler(PacketV1Handler):
     """
-    Response packet handler for client. It handles response packet from server and
-    performs required actions on client side.
+    Response packet-v1 handler for client. It handles response packet from server and
+    performs required actions on client.
     """
 
     def __init__(self, client: Any):

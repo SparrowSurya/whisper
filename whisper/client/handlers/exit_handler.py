@@ -1,17 +1,17 @@
 """
-This module provides init packet response handler.
+This module provides init packet-v1 response handler.
 """
 
 from whisper.packet.v1 import PacketType
 from whisper.packet.v1.exit_packet import ExitReason
-from .base import ResponsePacketHandler
+from .base import PacketV1ResponseHandler
 
 
-class ExitHandler(ResponsePacketHandler):
+class ExitHandler(PacketV1ResponseHandler):
     """Handles init packet response handler."""
 
-    @classmethod
-    def packet_type(cls):
+    @staticmethod
+    def packet_type():
         return PacketType.EXIT
 
     def handle(self, reason: ExitReason, *args, **kwargs):

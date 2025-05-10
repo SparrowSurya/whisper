@@ -1,16 +1,16 @@
 """
-This module provides init packet response handler.
+This module provides init packet-v1 response handler.
 """
 
 from whisper.packet.v1 import PacketType
-from .base import ResponsePacketHandler
+from .base import PacketV1ResponseHandler
 
 
-class InitHandler(ResponsePacketHandler):
+class InitHandler(PacketV1ResponseHandler):
     """Handles init packet response handler."""
 
-    @classmethod
-    def packet_type(cls):
+    @staticmethod
+    def packet_type():
         return PacketType.INIT
 
     def handle(self, username: str, *args, **kwargs):

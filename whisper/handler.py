@@ -4,16 +4,16 @@ from typing import Any
 from whisper.packet.v1 import PacketV1, PacketType
 
 
-class AbstractPacketHandler(abc.ABC):
-    """Abstract packet type handler class for handelling request/response packet."""
+class PacketV1Handler(abc.ABC):
+    """Abstract packet handler for handelling request/response packet-v1."""
 
     def __init__(self, app: Any):
         self.app = app
         self.logger = self.app.logger
 
     @classmethod
-    @abc.abstractmethod
-    def packet_type(cls) -> PacketType:
+    @abc.staticmethod
+    def packet_type() -> PacketType:
         """Provides the packet type handled by class."""
 
     def __call__(self, packet: PacketV1) -> Any:

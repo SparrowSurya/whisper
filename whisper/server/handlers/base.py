@@ -1,16 +1,16 @@
 """
-This module provides base request packet handler for server.
+This module provides abstract request packet-v1 handler for server.
 """
 
 from typing import Any
 
-from whisper.handler import AbstractPacketHandler
+from whisper.handler import PacketV1Handler
 
 
-class RequestPacketHandler(AbstractPacketHandler):
+class PacketV1RequestHandler(PacketV1Handler):
     """
-    Request packet handler base class for server. It handles request from client and
-    provides appropriate responses it there.
+    Request packet-v1 handler base class for server. It handles request from client and
+    provides appropriate responses to recipients.
     """
 
     def __init__(self, server: Any):

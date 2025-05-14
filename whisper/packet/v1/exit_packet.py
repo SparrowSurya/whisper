@@ -5,7 +5,7 @@ This module provides exit packet implementation for packet v1.
 import struct
 from enum import IntEnum, auto
 
-from .base import PacketType, PacketV1, PacketV1Registery, Status
+from .base import PacketType, PacketV1, PacketRegistery, Status
 
 
 class ExitReason(IntEnum):
@@ -16,8 +16,8 @@ class ExitReason(IntEnum):
     EXCEPTION = auto()
 
 
-@PacketV1Registery.register
-class ExitPacket(PacketV1):
+@PacketRegistery.register_handler
+class ExitV1Packet(PacketV1):
 
     @staticmethod
     def packet_type() -> PacketType:
@@ -33,6 +33,6 @@ class ExitPacket(PacketV1):
         data = struct.pack("B", (reason & 0x0F) << 4)
         return cls.create(data, status)
 
-    def content(self) -> ExitReason:
+    def contents(self) -> ExitReason:
         value = struct.unpack("B", self.data)[0] >> 4
         return ExitReason(value)

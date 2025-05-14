@@ -4,15 +4,15 @@ manages different packet type implementations.
 """
 
 from .base import PacketType, PacketV1, Status
-from .init_packet import InitPacket
-from .exit_packet import ExitReason, ExitPacket
+from .init_packet import InitV1Packet
+from .exit_packet import ExitReason, ExitV1Packet
 
 
 __all__ = (
     "PacketType",
     "PacketV1",
     "Status",
-    "InitPacket",
+    "InitV1Packet",
     "ExitReason",
-    "ExitPacket",
+    "ExitV1Packet",
 )

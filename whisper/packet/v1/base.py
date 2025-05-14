@@ -1,12 +1,12 @@
 """
-This modules provides packet version 1 and related objects.
+This modules provides packet-v1 abstract class and related objects.
 """
 
 import struct
 import logging
 from enum import IntEnum, auto
 from functools import cached_property
-from typing import Tuple, Dict, Type, Awaitable, Callable
+from typing import Awaitable, Callable
 
 from whisper.packet import Packet, PacketRegistery
 
@@ -15,7 +15,6 @@ __all__ = (
     "PacketType",
     "Status",
     "PacketV1",
-    "PacketV1Registery",
 )
 
 
@@ -36,7 +35,7 @@ class Status(IntEnum):
     VALIDATION_ERROR = auto()
 
 
-@PacketRegistery.register
+@PacketRegistery.register_packet
 class PacketV1(Packet):
     """
     Abstract PacketV1 packet structure. This class provides base for all kinds of child
@@ -71,10 +70,11 @@ class PacketV1(Packet):
         """Construct packet from the stream."""
         type_ = PacketType(struct.unpack("B", await reader(1))[0])
         length = struct.unpack("H", await reader(2))[0]
-        status = Status(struct.unpack("B", await reader(1))[0])
+        status = Status(struct.unpack("B", await reader(1))[0] >> 4)
         data = await reader(length)
-        handler = PacketV1Registery.get_packet_cls(type_)
-        return handler(type_, data, status)
+        version = cls.version()
+        handler = PacketRegistery.handlers[version][type_]
+        return handler(type_, data, status) # type: ignore
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
@@ -119,54 +119,8 @@ class PacketV1(Packet):
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        name = type(self).__name__
-        version = self.version()
-        return f"<{name}v{version}>"
+        return f"<cls: '{type(self).__name__}'>"
 
-
-class PacketV1Registery:
-    """Manages the packetv1 handlers. Do not instantiate this class."""
-
-    _handlers: Dict[PacketType, Type[PacketV1]] = {}
-    """Maps packet type against their handlers."""
-
-    @staticmethod
-    def validate(handler: Type[PacketV1]):
-        """Performs validation checks on packet"""
-        if not issubclass(handler, PacketV1):
-            msg = f"{handler.__name__} must be subclass of `PacketV1`"
-            raise ValueError(msg)
-
-        type = handler.packet_type()
-        if PacketV1Registery._handlers.get(type) is not None:
-            msg = f"{handler.__name__} is already registered"
-            raise ValueError(msg)
-
-    @staticmethod
-    def register(handler: Type[PacketV1]) -> Type[PacketV1]:
-        """
-        Use this as decorator to register a packet type handler.
-
-        Usage:
-        >>> @PacketTypeRegistery.register
-        >>> class MyPacket(PacketV1):
-        >>>     ...
-        """
-        try:
-            PacketV1Registery.validate(handler)
-        except Exception:
-            logger.exception(f"packetv1 handler validation failed: {handler}")
-
-        PacketV1Registery._handlers[handler.packet_type()] = handler
-        logger.debug(f"registered packetv1 handler: {handler}")
-        return handler
-
-    @staticmethod
-    def get_packet_cls(type: PacketType) -> Type[PacketV1]:
-        """Get packet class for the packet version."""
-        return PacketV1Registery._handlers[type]
-
-    @staticmethod
-    def registered_versions() -> Tuple[PacketType, ...]:
-        """Provides registered packet versions."""
-        return tuple(PacketV1Registery._handlers.keys())
+    @classmethod
+    def unique_key(cls) -> PacketType:
+        return cls.packet_type()

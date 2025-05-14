@@ -12,7 +12,7 @@ from whisper.client.base import BaseClient
 from whisper.client.settings import Config
 from whisper.eventloop import EventLoop
 from whisper.packet import Packet
-from whisper.packet.v1 import InitPacket
+from whisper.packet.v1 import InitV1Packet
 from whisper.common import Address
 from whisper.typing import (
     TcpClient as _TcpClient,
@@ -62,7 +62,7 @@ class Client(BaseClient, EventLoop):
 
     def init_connection(self, username: str):
         """This initialises the client on server side."""
-        packet = InitPacket.request(username=username)
+        packet = InitV1Packet.request(username=username)
         self.schedule(self.sendq.put(packet))
 
     async def read_coro(self):

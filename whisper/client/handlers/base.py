@@ -1,18 +1,20 @@
 """
-This module provide abstract pacekt-v1 response handler for client.
+This module provide base response handler for client.
 """
 
-from typing import Any
+from typing import Any, TypeVar
 
-from whisper.handler import PacketV1Handler
+from whisper.packet import Packet
+from whisper.handler import AbstractPacketHandler
 
 
-class PacketV1ResponseHandler(PacketV1Handler):
+_P = TypeVar("_P", bound=Packet)
+
+class AbstractResponseHandler(AbstractPacketHandler[_P, Any]):
     """
-    Response packet-v1 handler for client. It handles response packet from server and
-    performs required actions on client.
+    Response packet handler for client. It handles response packet from server and
+    performs required actions on client side.
     """
 
-    def __init__(self, client: Any):
-        super().__init__(client)
-        self.client = self.app
+    def __call__(self, packet: _P, /, *args): # type: ignore[override]
+        return super().__call__(packet, packet.status, *args)

@@ -1,23 +1,18 @@
 """
-This package provides response packet-v1 handler for client.
+This package provides response packet handlers for client.
 """
 
-from typing import List, Type
+from typing import Tuple, Dict, Type
 
-from .base import PacketV1ResponseHandler
-from .init_handler import InitHandler
-from .exit_handler import ExitHandler
+from .base import AbstractResponseHandler
+from .v1 import Handlers as V1Handlers
 
 
 __all__ = (
-    "PacketV1ResponseHandler",
-    "InitHandler",
-    "ExitHandler",
-    "handlers",
+    "AbstractResponseHandler",
+    "Handlers",
 )
 
-
-handlers: List[Type[PacketV1ResponseHandler]] = [
-    InitHandler,
-    ExitHandler,
-]
+Handlers: Dict[int, Tuple[Type[AbstractResponseHandler], ...]] = {
+    1: V1Handlers,
+}

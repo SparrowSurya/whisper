@@ -5,7 +5,7 @@ The module contains the client application object.
 import signal
 import logging
 import threading
-from typing import Self
+from typing import Self, Dict
 
 from whisper.client.backend import Client
 from whisper.client.settings import Setting
@@ -13,7 +13,7 @@ from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
 from whisper.components.root import Root
 from whisper.components.conn_init_form import ConnInitFormDialog
-from whisper.packet.v1 import ExitPacket, ExitReason
+from whisper.packet.v1 import ExitV1Packet, ExitReason
 from whisper.typing import (
     TcpClient as _TcpClient,
     TkPalette as _TkPalette,
@@ -80,7 +80,7 @@ class App(Client, MainWindow):
         if self.run_main(self.main) is None:
             logger.info("eventloop exited")
         else:
-            logger.exception("eventloop exited due to exception")
+            logger.info("eventloop exited due to exception")
 
     def run(self):
         """Starts the backend thread."""
@@ -97,7 +97,7 @@ class App(Client, MainWindow):
         self.init_connection()
         await Client.main(self)
         if reason := self.stop_main_result():
-            packet = ExitPacket.request(reason)
+            packet = ExitV1Packet.request(reason)
             await self.write(packet, self.loop)
         self.close_connection()
 
@@ -129,8 +129,13 @@ class App(Client, MainWindow):
         logger.info(f"received signal: {sig}")
         self.shutdown(ExitReason.FORCE_EXIT)
 
-    def init_connection(self): # TODO
+    def init_connection(self,
+        initial_values: Dict[str, str] | None = None,
+        initial_errors: Dict[str, str] | None = None,
+    ):
         """Opens a dialogue box for required details."""
+        values = initial_values or {}
+        errors = initial_errors or {}
 
         def callback(**kwargs):
             nonlocal self, dialog
@@ -138,7 +143,7 @@ class App(Client, MainWindow):
             dialog.close()
 
         dialog = ConnInitFormDialog(self, callback)
-        dialog.setup()
+        dialog.setup(values, errors)
 
     def create_palette(self, palette: Palette) -> _TkPalette:
         """Create palette options from color palette."""

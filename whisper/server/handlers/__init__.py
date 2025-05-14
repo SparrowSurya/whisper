@@ -1,22 +1,18 @@
 """
-This package contains request packet handler classes for server.
+This package provides request packet handler classes for server.
 """
 
-from typing import List, Type
+from typing import Tuple, Dict, Type
 
-from .base import PacketV1RequestHandler
-from .init_handler import InitHandler
-from .exit_handler import ExitHandler
+from .base import AbstractRequestHandler
+from .v1 import Handlers as V1Handlers
 
 
 __all__ = (
-    "PacketV1RequestHandler",
-    "InitHandler",
-    "ExitHandler",
-    "handlers",
+    "AbstractRequestHandler",
+    "Handlers",
 )
 
-handlers: List[Type[PacketV1RequestHandler]] = [
-    InitHandler,
-    ExitHandler,
-]
+Handlers: Dict[int, Tuple[Type[AbstractRequestHandler], ...]] = {
+    1: V1Handlers,
+}

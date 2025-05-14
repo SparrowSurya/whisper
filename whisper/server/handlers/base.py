@@ -1,18 +1,22 @@
 """
-This module provides abstract request packet-v1 handler for server.
+This module provides abstract base request packet handler class for server.
 """
 
-from typing import Any
+from typing import Any, TypeVar
 
-from whisper.handler import PacketV1Handler
+from whisper.server.connection import ConnHandle
+from whisper.handler import AbstractPacketHandler
+from whisper.packet import Packet
 
 
-class PacketV1RequestHandler(PacketV1Handler):
-    """
-    Request packet-v1 handler base class for server. It handles request from client and
-    provides appropriate responses to recipients.
-    """
+_P = TypeVar("_P", bound=Packet)
 
-    def __init__(self, server: Any):
-        super().__init__(server)
-        self.server = self.app
+class AbstractRequestHandler(AbstractPacketHandler[_P, Any]):
+    """Base packet handler class for server handlers."""
+
+    def __call__(self, packet: _P, conn: ConnHandle, /, *args): # type: ignore[override]
+        return super().__call__(packet, conn, *args)
+
+    @staticmethod
+    def unique_key() -> Any:
+        """Provide the unique key same as the packet handeled."""

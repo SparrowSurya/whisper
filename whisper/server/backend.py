@@ -11,10 +11,10 @@ from typing import Iterable, Dict, Tuple, NoReturn
 from whisper.eventloop import EventLoop
 from whisper.common import Address
 from whisper.packet import Packet
-from whisper.packet.v1 import ExitPacket, ExitReason, Status
+from whisper.packet.v1 import ExitV1Packet, ExitReason, Status
 from whisper.server.base import BaseServer
 from whisper.server.connection import ConnHandle
-# from .handlers import handlers
+from whisper.server.handlers import Handlers
 from whisper.typing import (
     TcpServer as _TcpServer,
     AsyncQueue as _AsyncQueue,
@@ -32,7 +32,9 @@ class Server(BaseServer, EventLoop):
         EventLoop.__init__(self)
 
         self.clients: Dict[Address, ConnHandle] = {}
-        # self.handlers = {handler.packet_type: handler(self) for handler in handlers}
+        self.handlers = {version: {
+            handler.unique_key(): handler(self) for handler in Handlers[version]
+        } for version in Handlers.keys()}
 
     @cached_property
     def recvq(self) -> _AsyncQueue[Tuple[Packet, ConnHandle]]:
@@ -54,7 +56,7 @@ class Server(BaseServer, EventLoop):
     async def main(self, host: str, port: int): # type: ignore[override]
         self.start_server(host, port)
         await EventLoop.main(self)
-        exit_packet = ExitPacket.response(ExitReason.SELF_EXIT, Status.SUCCESS)
+        exit_packet = ExitV1Packet.response(ExitReason.SELF_EXIT, Status.SUCCESS)
         for address, conn in self.clients:
             await self.write(conn, exit_packet, self.loop)
             logger.info(f"sent {exit_packet!r} to {address}")
@@ -143,20 +145,20 @@ class Server(BaseServer, EventLoop):
                     logger.exception("exception occure whiel running write_coro")
         logger.info("write_coro exited")
 
-    # async def handler_coro(self) -> NoReturn:
-    #     """Handles incoming packets from queue and writes outgoing packets to queue."""
-    #     logger.info("handler_coro running")
-    #     while True:
-    #         packet, conn = await self.recvq.get()
-    #         handler = self.handler[packet.kind]
-    #         if responses := handler(packet, conn):
-    #             for packet, conns in responses:
-    #                 await self.sendq.put((packet, conns))
+    async def handler_coro(self) -> NoReturn:
+        """Handles incoming packets from queue and writes outgoing packets to queue."""
+        logger.info("handler_coro running")
+        while True:
+            packet, conn = await self.recvq.get()
+            handler = self.handlers[packet.version()][packet.unique_key()]
+            if responses := handler(packet, conn):
+                for packet, conns in responses:
+                    await self.sendq.put((packet, conns))
 
     def initial_tasks(self):
         """Initial tasks."""
         return super().initial_tasks() | {
             self.accept_coro,
             self.write_coro,
-            # self.handler_coro,
+            self.handler_coro,
         }

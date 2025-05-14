@@ -9,12 +9,13 @@ import logging
 import pathlib
 import importlib
 from types import ModuleType
-from typing import Any, Awaitable, Callable, Dict, List, Tuple, Type
+from typing import Any, Awaitable, Callable, Dict, List, Type, ClassVar
 
 
 logger = logging.getLogger(__name__)
 
-class Packet(metaclass=abc.ABCMeta):
+
+class Packet(abc.ABC):
     """
     Abstract Packet class. It handles the packet being created from stream of bytes
     and the required packet version. Implement this to customise the packet structure.
@@ -50,23 +51,26 @@ class Packet(metaclass=abc.ABCMeta):
         structure.
         """
         version = struct.unpack("B", await reader(1))[0]
-        packet = PacketRegistery.get_packet_cls(version)
+        packet = PacketRegistery.packets[version]
         return await packet.from_stream(reader)
 
     @classmethod
     @abc.abstractmethod
     def create(cls, *args: Any, **kwargs: Any):
         """Create packet from the arguments."""
+        raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
     def request(cls, *args: Any, **kwargs: Any):
         """Create request packet."""
+        raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
     def response(cls, *args: Any, **kwargs: Any):
         """Create response packet."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def to_stream(self) -> bytes:
@@ -75,70 +79,58 @@ class Packet(metaclass=abc.ABCMeta):
         return struct.pack("B", self.version())
 
     @abc.abstractmethod
-    def content(self) -> Any:
+    def contents(self) -> Any:
         """Get the contents from data."""
+        raise NotImplementedError
 
     def __repr__(self):
         return f"<Packet-v{self.version()}>"
 
+    @classmethod
+    @abc.abstractmethod
+    def unique_key(cls) -> Any:
+        """A unique value identifying this packet handler."""
+        raise NotImplementedError
 
-class PacketRegistery:
+
+class PacketRegistery():
     """
-    Manages the packet versions and their respective handlers. Not all versions are
-    allowed (see `version_allowed`). Use the class directly instead creating instance.
+    Manages packet version handlers and version implementation handlers. Allowed
+    versions range from 1 to 255. Use the class directly instead creating instance.
     """
 
-    _packets: Dict[int, Type[Packet]] = {}
-    """Maps version against their handlers."""
+    packets: ClassVar[Dict[int, Type[Packet]]] = {}
+    """stores the packet versions"""
+
+    handlers: ClassVar[Dict[int, Dict[Any, Type[Packet]]]] = {}
+    """stores the packet version handlers"""
 
     @staticmethod
-    def version_allowed(version: int):
-        """Know if version is allowed or not."""
-        return version in range(1, 256)
-
-    @staticmethod
-    def validate(packet: Type[Packet]):
-        """Performs validation checks on packet"""
-        if not issubclass(packet, Packet):
-            msg = f"{packet.__name__} must be subclass of `Packet`"
-            raise ValueError(msg)
-
+    def register_packet(packet: Type[Packet]) -> Type[Packet]:
+        """Register a packet version handler. The packet must define `version`
+        staticmethod and should not be duplicate."""
         version = packet.version()
-        if not PacketRegistery.version_allowed(version):
-            msg = f"Version number {version} is not allowed!"
-            raise ValueError(msg)
-
-        if PacketRegistery._packets.get(version) is not None:
-            msg = f"Packet v{version} is already registered"
-            raise ValueError(msg)
-
-    @staticmethod
-    def register(packet: Type[Packet]) -> Type[Packet]:
-        """Use this as decorator to register a packet.
-
-        Usage:
-        >>> @PacketRegistery.register
-        >>> class PacketV1(Packet):
-        >>>     ...
-        """
-        try:
-            PacketRegistery.validate(packet)
-        except Exception:
-            logger.exception(f"packet validation failed: {packet}")
-
-        PacketRegistery._packets[packet.version()] = packet
-        logger.info(f"registered packet: {packet!r}")
+        if version in PacketRegistery.packets.keys():
+            logger.warning(
+                f"packet-v{version} already registered, registration skipped")
+        else:
+            PacketRegistery.packets[version] = packet
+            logger.info(f"registered packet: {packet!r}")
+            PacketRegistery.handlers[version] = {}
         return packet
 
     @staticmethod
-    def get_packet_cls(version: int) -> Type[Packet]:
-        """Get packet class for the packet version."""
-        return PacketRegistery._packets[version]
-
-    @staticmethod
-    def registered_versions() -> Tuple[int, ...]:
-        """Provides registered packet versions."""
-        return tuple(PacketRegistery._packets.keys())
+    def register_handler(handler: Type[Packet]) -> Type[Packet]:
+        """Register a handler implementing specific version subtype handler. Make sure
+        that packet parent must be registered before child is registered."""
+        version = handler.version()
+        if version not in PacketRegistery.packets.keys():
+            logger.warning(f"registering handler for packet-v{version} before parent")
+            PacketRegistery.handlers[version] = {}
+        key = handler.unique_key()
+        PacketRegistery.handlers[version][key] = handler
+        logger.info(f"registered handler: {handler!r}")
+        return handler
 
     @staticmethod
     def ensure_regisered() -> List[ModuleType]:

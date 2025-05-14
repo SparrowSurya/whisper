@@ -1,16 +1,17 @@
 """
-This module provides init packet implementation for packet v1.
+This module provides init packet-v1 implementation.
 """
 
 
 from typing import Any, Dict
 
 from whisper.codec import json_decode, json_encode
-from .base import PacketType, PacketV1, PacketV1Registery, Status
+from whisper.packet import PacketRegistery
+from .base import PacketType, PacketV1, Status
 
 
-@PacketV1Registery.register
-class InitPacket(PacketV1):
+@PacketRegistery.register_handler
+class InitV1Packet(PacketV1):
 
     @staticmethod
     def packet_type() -> PacketType:
@@ -25,5 +26,5 @@ class InitPacket(PacketV1):
     def response(cls, *, status: Status, **kwargs):
         return cls.create(json_encode(kwargs), status)
 
-    def content(self) -> Dict[str, Any]:
+    def contents(self) -> Dict[str, Any]:
         return json_decode(self.data)

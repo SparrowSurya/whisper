@@ -10,10 +10,11 @@ from whisper.packet import Packet
 
 
 _P = TypeVar("_P", bound=Packet)
+_K = TypeVar("_K", bound=Any)
 _A = TypeVar("_A", bound=Any)
 
 
-class AbstractPacketHandler(abc.ABC, Generic[_P, _A]):
+class AbstractPacketHandler(abc.ABC, Generic[_P, _K, _A]):
     """Common abstract packet handler class for packet handelling."""
 
     def __init__(self, app: _A):
@@ -37,11 +38,11 @@ class AbstractPacketHandler(abc.ABC, Generic[_P, _A]):
             and not isinstance(content[0], (str, bytes))
             and isinstance(content[1], Mapping)
         ):
-            self.handle(*args, *content[0], **content[1])
+            return self.handle(*args, *content[0], **content[1])
         elif isinstance(content, Mapping):
-            self.handle(*args, **content)
+            return self.handle(*args, **content)
         elif isinstance(content, Sequence) and not isinstance(content, (str, bytes)):
-            self.handle(*args, *content)
+            return self.handle(*args, *content)
         else:
             return self.handle(*args, content)
 
@@ -50,7 +51,12 @@ class AbstractPacketHandler(abc.ABC, Generic[_P, _A]):
         Any,
         Sequence[Any],
         Mapping[str, Any],
-        Tuple[Sequence, Mapping[str, Any]],
+        Tuple[Sequence[Any], Mapping[str, Any]],
     ]:
         """Perform required actions."""
         raise NotImplementedError
+
+    @staticmethod
+    @abc.abstractmethod
+    def unique_key() -> _K:
+        """A unique key representing a specific packet implementation being handled."""

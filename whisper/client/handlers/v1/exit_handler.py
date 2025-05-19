@@ -10,9 +10,9 @@ from .base import ResponseV1Handler
 class ExitV1Handler(ResponseV1Handler):
     """Exit packet-v1 handler implementation."""
 
-    @classmethod
-    def packet_type(cls) -> PacketType:
-        return ExitV1Packet.packet_type()
+    @staticmethod
+    def unique_key() -> PacketType:
+        return ExitV1Packet.unique_key()
 
     def handle(self, status: Status, reason: ExitReason, *args, **kwargs):
         pass

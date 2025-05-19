@@ -10,22 +10,33 @@ class InitV1Handler(ResponseV1Handler):
     """Init packet-v1 handler implementation"""
 
     @staticmethod
-    def packet_type() -> PacketType:
-        return InitV1Packet.packet_type()
+    def unique_key() -> PacketType:
+        return InitV1Packet.unique_key()
 
-    def handle(self, /, status: Status, *, username: str, key: str = "", **kwargs):
+    def handle(self,
+        /,
+        status: Status,
+        *,
+        username: str = "",
+        key: str = "",
+        message: str = "",
+        field: str = "",
+        value: str = "",
+        **kwargs,
+    ):
         if status == Status.SUCCESS:
+            print(f"{username=}, {key=}")
             return self.handle_success(username, key, **kwargs)
 
         if status == Status.VALIDATION_ERROR:
-            return self.handle_validation_error(username, key, **kwargs)
+            return self.handle_validation_error(value, message, field, **kwargs)
 
     def handle_success(self, username: str, key: str, **kwargs):
         self.app.setting.data["username"] = username
-        self.aoo.hide_splash_screen() # TODO
-        self.app.join_global_chat() # TODO
+        # self.aoo.hide_splash_screen() # TODO
+        # self.app.join_global_chat() # TODO
 
-    def handle_validation_error(self, username: str, message: str, **kwargs):
-        initial_values = { "username": username }
-        initial_errors = { "username": message }
-        self.app.init_connection(initial_values, initial_errors) # TODO
+    def handle_validation_error(self, value: str, message: str, field: str, **kwargs):
+        values = { field: value }
+        errors = { field: message }
+        self.app.init_connection(values, errors)

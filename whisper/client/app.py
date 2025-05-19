@@ -157,6 +157,7 @@ class App(Client, MainWindow):
 
         dialog = ConnInitFormDialog(self, callback)
         dialog.setup(values or {}, errors or {})
+        dialog.focus_set()
 
     def initial_tasks(self):
         return super().initial_tasks() | { self.handler_coro }

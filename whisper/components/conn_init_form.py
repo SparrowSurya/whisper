@@ -29,7 +29,11 @@ class ConnInitForm(Container, BaseForm):
 
         self.inputs.add(self.username)
 
-    def setup(self):
+    def setup(self,
+        values: Dict[str, str] | None = None,
+        errors: Dict[str, str] | None = None,
+    ):
+        BaseForm.setup(self, values, errors)
         self.username.setup()
         self.submit.setup()
         self.username.label.pack(fill="x", pady=(8, 4))
@@ -51,6 +55,9 @@ class ConnInitFormDialog(Dialog):
         self.form.pack(fill="x")
         self.set_theme(self.app.setting.theme)
 
-    def setup(self):
-        super().setup()
-        self.form.setup()
+    def setup(self,
+        values: Dict[str, str] | None = None,
+        errors: Dict[str, str] | None = None,
+    ):
+        Dialog.setup(self)
+        self.form.setup(values, errors)

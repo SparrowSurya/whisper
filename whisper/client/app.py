@@ -5,12 +5,13 @@ The module contains the client application object.
 import signal
 import logging
 import threading
-from typing import Self, Dict
+from typing import Self, Dict, NoReturn
 
 from whisper.client.backend import Client
 from whisper.client.settings import Setting
 from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
+from whisper.client.handlers import Handlers
 from whisper.components.root import Root
 from whisper.components.conn_init_form import ConnInitFormDialog
 from whisper.packet.v1 import ExitV1Packet, ExitReason
@@ -34,8 +35,14 @@ class App(Client, MainWindow):
     def __init__(self, title: str, setting: Setting, conn: _TcpClient):
         """The `conn` object is used to connect with the servers."""
         MainWindow.__init__(self)
+
         self.setting = setting
+        self.handlers = {version: {
+            handler.unique_key(): handler(self) for handler in Handlers[version]
+        } for version in Handlers.keys()}
+
         Client.__init__(self, config=setting.cfg, conn=conn)
+
         self.root = Root(self)
         self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
         self.title(title)
@@ -129,13 +136,19 @@ class App(Client, MainWindow):
         logger.info(f"received signal: {sig}")
         self.shutdown(ExitReason.FORCE_EXIT)
 
+    async def handler_coro(self) -> NoReturn:
+        """Handles incoming packets from queue and writes outgoing packets to queue."""
+        logger.info("handler_coro running")
+        while True:
+            packet = await self.recvq.get()
+            handler = self.handlers[packet.version()][packet.unique_key()]
+            handler(packet)
+
     def init_connection(self,
-        initial_values: Dict[str, str] | None = None,
-        initial_errors: Dict[str, str] | None = None,
+        values: Dict[str, str] | None = None,
+        errors: Dict[str, str] | None = None,
     ):
         """Opens a dialogue box for required details."""
-        values = initial_values or {}
-        errors = initial_errors or {}
 
         def callback(**kwargs):
             nonlocal self, dialog
@@ -143,7 +156,10 @@ class App(Client, MainWindow):
             dialog.close()
 
         dialog = ConnInitFormDialog(self, callback)
-        dialog.setup(values, errors)
+        dialog.setup(values or {}, errors or {})
+
+    def initial_tasks(self):
+        return super().initial_tasks() | { self.handler_coro }
 
     def create_palette(self, palette: Palette) -> _TkPalette:
         """Create palette options from color palette."""

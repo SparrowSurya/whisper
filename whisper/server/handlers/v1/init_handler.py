@@ -14,7 +14,7 @@ from .base import RequestV1Handler
 
 class InitV1Handler(RequestV1Handler):
 
-    username_regex = re.compile("^[a-zA-Z0-9_@-]{3, 15}$")
+    username_regex = re.compile("^[a-zA-Z0-9_@-]{3,15}$")
     username_error = {
         "pattern": "username must consist of alphanumeric characters and '_', '-', '@' symbols only",
         "length": "username should have length between 3 and 15",
@@ -24,11 +24,7 @@ class InitV1Handler(RequestV1Handler):
     keylen = 8
 
     @staticmethod
-    def packet_type() -> PacketType:
-        return InitV1Packet.packet_type()
-
-    @staticmethod
-    def unique_key():
+    def unique_key() -> PacketType:
         return InitV1Packet.unique_key()
 
     def handle(self, conn: ConnHandle, *args, username: str, **kwargs):
@@ -37,8 +33,8 @@ class InitV1Handler(RequestV1Handler):
             packet = InitV1Packet.response(
                 status=Status.VALIDATION_ERROR,
                 message=username_or_msg,
-                error="validation",
-                field="username")
+                field="username",
+                value=username)
             return [(packet, [conn])]
 
         conn.serve = True

@@ -10,11 +10,7 @@ from .base import RequestV1Handler
 class ExitV1Handler(RequestV1Handler):
 
     @staticmethod
-    def packet_type() -> PacketType:
-        return PacketType.EXIT
-
-    @staticmethod
-    def unique_key():
+    def unique_key() -> PacketType:
         return ExitV1Packet.unique_key()
 
     def handle(self,

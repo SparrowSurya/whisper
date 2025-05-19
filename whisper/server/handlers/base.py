@@ -10,13 +10,10 @@ from whisper.packet import Packet
 
 
 _P = TypeVar("_P", bound=Packet)
+_K = TypeVar("_K", bound=Any)
 
-class AbstractRequestHandler(AbstractPacketHandler[_P, Any]):
+class AbstractRequestHandler(AbstractPacketHandler[_P, _K, Any]):
     """Base packet handler class for server handlers."""
 
     def __call__(self, packet: _P, conn: ConnHandle, /, *args): # type: ignore[override]
         return super().__call__(packet, conn, *args)
-
-    @staticmethod
-    def unique_key() -> Any:
-        """Provide the unique key same as the packet handeled."""

@@ -66,6 +66,16 @@ class CustomWindow(CustomWidget):
         """Sets tkinter palette options.."""
         self.tk_setPalette(self, *args, **kwargs)
 
+    def center_window(self, width: int = 0, height: int = 0):
+        """Center the position of window in screen."""
+        max_width = self.winfo_screenwidth()
+        max_height = self.winfo_screenheight()
+        width = width or self.winfo_reqwidth()
+        height = height or self.winfo_reqheight()
+        x = (max_width - width)//2
+        y = (max_height - height)//2
+        self.wm_geometry(f"{width}x{height}+{x}+{y}")
+
     @classmethod
     def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
         return {

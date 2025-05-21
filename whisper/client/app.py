@@ -14,6 +14,7 @@ from whisper.ui.theme import Palette
 from whisper.client.handlers import Handlers
 from whisper.components.root import Root
 from whisper.components.conn_init_form import ConnInitFormDialog
+from whisper.components.splash_screen import SplashWindow
 from whisper.packet.v1 import ExitV1Packet, ExitReason
 from whisper.typing import (
     TcpClient as _TcpClient,
@@ -37,6 +38,7 @@ class App(Client, MainWindow):
         MainWindow.__init__(self)
 
         self.setting = setting
+        self.splash = SplashWindow(self)
         self.handlers = {version: {
             handler.unique_key(): handler(self) for handler in Handlers[version]
         } for version in Handlers.keys()}
@@ -57,6 +59,7 @@ class App(Client, MainWindow):
         self.set_palette(self.setting.theme.palette.base, **palette_opts)
         self.set_theme(self.setting.theme)
         self.set_font(**self.setting.theme.font)
+        self.splash.setup()
         self.setup_root()
 
     def setup_root(self):
@@ -72,7 +75,7 @@ class App(Client, MainWindow):
     def mainloop(self, n: int = 0):
         """Starts the application."""
         self.handle_signals()
-        self.after(1000, self.run)
+        # self.after(1000, self.run)
         logger.info("running mainloop")
         try:
             MainWindow.mainloop(self, n)

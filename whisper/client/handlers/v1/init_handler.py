@@ -25,7 +25,6 @@ class InitV1Handler(ResponseV1Handler):
         **kwargs,
     ):
         if status == Status.SUCCESS:
-            print(f"{username=}, {key=}")
             return self.handle_success(username, key, **kwargs)
 
         if status == Status.VALIDATION_ERROR:

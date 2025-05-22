@@ -2,6 +2,7 @@
 This module provide custom tkinter window and toplevel window.
 """
 
+import logging
 import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Unpack, Mapping
@@ -17,36 +18,73 @@ from whisper.typing import (
 )
 
 
-class MainWindow(tk.Tk, CustomWidget):
-    """Main tkinter window which supports custom themes."""
+logger = logging.getLogger(__name__)
 
-    WINDOW_EXIT_EVENT = "<<Exit-MainWindow>>"
+
+class CustomWindow(CustomWidget):
+    """A mixin class for tkinter window."""
+
+    WINDOW_EXIT_EVENT = "<<Exit-Window>>"
     """Custom window exit event."""
 
-    GuiError = tk.TclError
+    TclError = tk.TclError
+    """Exception base class raised by GUI"""
+
+    def __init__(self):
+        CustomWidget.__init__(self)
+        self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.destroy)
+        self.on_window_exit(self.destroy)
+
+    def __init_subclass__(cls):
+        if not issubclass(cls, (tk.Tk, tk.Toplevel)):
+            logger.warning(f"{cls} is not subclass of `tkinter.Tk` or `tkinter.Toplevel`")
+
+    def hide_window(self):
+        """Hide the window."""
+        self.wm_withdraw()
+
+    def show_window(self):
+        """Show the window."""
+        self.wm_deiconify()
+
+    def show_titlebar(self):
+        """Shows the titlebar on the window."""
+        self.wm_overrideredirect(False)
+
+    def hide_titlebar(self):
+        """Hides titlebar on the window."""
+        self.wm_overrideredirect(True)
+
+    def on_window_exit(self, callback: Callable[[], None]):
+        """
+        Register a callback function, invoked when window is closed via close button.
+        Callback is not invoked when `destory` or `quit` methods are used.
+        """
+        self.wm_protocol("WM_DELETE_WINDOW", callback)
+
+    def set_palette(self, *args, **kwargs: Unpack[_TkPalette]):
+        """Sets tkinter palette options.."""
+        self.tk_setPalette(self, *args, **kwargs)
+
+    @classmethod
+    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
+        return {
+            "background": "base",
+            "highlightbackground": "base",
+            "highlightcolor": "base",
+        }
+
+
+class MainWindow(tk.Tk, CustomWindow):
+    """Main tkinter window which supports custom themes."""
 
     def __init__(self):
         tk.Tk.__init__(self)
-        CustomWidget.__init__(self)
-        self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.quit)
-        self.on_window_exit(self.quit)
-
-    def on_window_exit(self, callback: Callable[[], None]):
-        """Registers a callback function to be invoked when window is closed using
-        close button. Uses `tkinter.Tk.wm_protocol`."""
-        self.wm_protocol("WM_DELETE_WINDOW", callback)
+        CustomWindow.__init__(self)
 
     def mainloop(self, n: int = 0):
         """Start mainloop of the tkinter window."""
         tk.Tk.mainloop(self, n)
-
-    def quit(self):
-        """Exit the window wihtout invoking the `on_window_exit` callback."""
-        tk.Tk.destroy(self)
-
-    def set_palette(self, **options: Unpack[_TkPalette]):
-        """Sets tkinter palette options. Do not provide empty values."""
-        tk.Tk.tk_setPalette(self, **options)
 
     def set_font(self, font_name: str = "*", **options: Unpack[_Font]):
         """Set font options. Make sure that font_name should be valid tkinter font name"""
@@ -58,36 +96,10 @@ class MainWindow(tk.Tk, CustomWidget):
             font = tkfont.nametofont(font_name, self)
             font.configure(**options)
 
-    @classmethod
-    def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
-        return {
-            "background": "base",
-            "highlightbackground": "base",
-            "highlightcolor": "base",
-        }
 
-
-class Window(tk.Toplevel, CustomWidget):
+class Window(tk.Toplevel, CustomWindow):
     """Toplevel tkinter window which supports custom theme."""
-
-    WINDOW_EXIT_EVENT = "<<Exit-Window>>"
-    """Custom window exit event."""
 
     def __init__(self, master: _Misc):
         tk.Toplevel.__init__(self, master)
-        CustomWidget.__init__(self)
-        self.exit_event = EventBinding(self, self.WINDOW_EXIT_EVENT, self.quit)
-        self.on_window_exit(self.quit)
-
-    def on_window_exit(self, callback: Callable[[], None]):
-        """Registers a callback function to be invoked when window is closed using
-        close button. Uses `tkinter.Tk.wm_protocol`."""
-        self.wm_protocol("WM_DELETE_WINDOW", callback)
-
-    def quit(self):
-        """Exit the window wihtout invoking the `on_window_exit` callback."""
-        tk.Toplevel.destroy()
-
-    def set_palette(self, **options: _TkPalette):
-        """Sets tkinter palette options. Do not provide empty values."""
-        tk.Toplevel.tk_setPalette(self, **options)
+        CustomWindow.__init__(self)

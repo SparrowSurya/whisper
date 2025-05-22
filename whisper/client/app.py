@@ -54,7 +54,7 @@ class App(Client, MainWindow):
         configuration."""
         self.on_window_exit(lambda: self.shutdown(ExitReason.SELF_EXIT))
         palette_opts = self.create_palette(self.setting.theme.palette)
-        self.set_palette(**palette_opts)
+        self.set_palette(self.setting.theme.palette.base, **palette_opts)
         self.set_theme(self.setting.theme)
         self.set_font(**self.setting.theme.font)
         self.setup_root()
@@ -157,6 +157,7 @@ class App(Client, MainWindow):
 
         dialog = ConnInitFormDialog(self, callback)
         dialog.setup(values or {}, errors or {})
+        dialog.focus_set()
 
     def initial_tasks(self):
         return super().initial_tasks() | { self.handler_coro }

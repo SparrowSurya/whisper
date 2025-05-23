@@ -2,68 +2,37 @@
 This module provides the splash screen for the client application.
 """
 
-import tkinter as tk
+from typing import Dict, Any
 
-from whisper.ui import Window, Container, Button
-from whisper.typing import Misc as _Misc
-
-
-
-class SplashToolbar(Container):
-    """Replacement for splash screen titlebar tool options."""
-
-    def __init__(self, master: _Misc, **kwargs):
-        Container.__init__(self, master, **kwargs)
-
-        self.blank_img = tk.PhotoImage()
-
-        self.close_btn = Button(self,
-            text="",
-            image=self.blank_img,
-            compound="center",
-            relief="flat",
-            width=28,
-            height=28,
-            padx=8,
-            highlightthickness=0,
-            border=0,
-            borderwidth=0,
-            command=self.master.app.shutdown)
-        self.minimize_btn = Button(self,
-            text="",
-            image=self.blank_img,
-            compound="center",
-            relief="flat",
-            width=28,
-            height=28,
-            padx=8,
-            highlightthickness=0,
-            border=0,
-            borderwidth=0)
-
-        self.close_btn.pack(side="right")
-        self.minimize_btn.pack(side="right")
-
-
-    def setup(self):
-        super().setup()
-        self.close_btn.config(font=("Roboto", 14, "bold"))
-        self.minimize_btn.config(font=("Roboto", 14, "bold"))
+from whisper.ui import Window, Label, Container
+from whisper.components.conn_init_form import ConnInitForm
+from whisper.typing import (
+    Misc as _Misc,
+    FormSubmitCmd as _FormSubmitCmd,
+)
 
 
 class SplashRoot(Container):
-    """Body of the splash screen."""
+    """Root of the splash screen."""
 
-    def __init__(self, master: _Misc, **kwargs):
+    def __init__(self, master: _Misc, on_submit: _FormSubmitCmd, **kwargs):
         Container.__init__(self, master, **kwargs)
         self.app = master.app
 
-        self.toolbar = SplashToolbar(self)
-        self.toolbar.pack(fill="x")
+        # TODO: layout
+        self.heading = Label(self, text="Initialize")
+        self.form = ConnInitForm(self, submit_cb=on_submit)
 
+    def setup(self):
+        super().setup()
+        self.heading.pack()
+        self.form.pack(expand=1)
+        self.heading.setup()
+        self.form.setup()
 
 
 class SplashWindow(Window):
+    """Splash screen window for client application."""
 
     def __init__(self, master: _Misc):
         Window.__init__(self, master)
@@ -71,16 +40,29 @@ class SplashWindow(Window):
         self.config(padx=1, pady=1)
         self.overrideredirect(True)
 
-        self.root = SplashRoot(self, height=320, width=240)
-        self.root.bind("<Button-1>", self.app.shutdown)
+        self.root = SplashRoot(self, on_submit=self.on_form_submit, height=320, width=240)
+        self.root.bind("<Button-1>", lambda _: self.app.shutdown(None))
 
     def setup(self):
         super().setup()
         self.root.pack(fill="both", expand=1)
         self.root.setup()
         self.center_window(320, 240)
-        self.app.hide_window()
         self.show_window()
+        self.app.hide_window()
+
+    def open_window(self,
+        values: Dict[str, Any] | None = None,
+        errors: Dict[str, Any] | None = None,
+    ):
+        """Open the window again"""
+        self.root.form.setup(values, errors)
+        self.show_window()
+
+    def on_form_submit(self, **kwargs):
+        """Handle conn init form submit."""
+        self.app.init_connection(**kwargs)
+        self.hide_window()
 
     @classmethod
     def default_colorscheme(cls):

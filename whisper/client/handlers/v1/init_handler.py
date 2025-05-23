@@ -32,10 +32,9 @@ class InitV1Handler(ResponseV1Handler):
 
     def handle_success(self, username: str, key: str, **kwargs):
         self.app.setting.data["username"] = username
-        # self.aoo.hide_splash_screen() # TODO
-        # self.app.join_global_chat() # TODO
+        self.app.show_window()
 
     def handle_validation_error(self, value: str, message: str, field: str, **kwargs):
         values = { field: value }
         errors = { field: message }
-        self.app.init_connection(values, errors)
+        self.app.splash.open_window(values, errors)

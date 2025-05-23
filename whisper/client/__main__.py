@@ -80,7 +80,7 @@ PacketRegistery.ensure_regisered()
 app = App(APP_NAME, setting=setting, conn=TcpClient())
 
 try:
-    app.mainloop()
+    app.run()
 except Exception as ex:
     logger.exception(f"uncaught exception in {program}: {ex}")
 else:

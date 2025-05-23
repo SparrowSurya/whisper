@@ -5,7 +5,7 @@ The module contains the client application object.
 import signal
 import logging
 import threading
-from typing import Self, Dict, NoReturn
+from typing import Self, NoReturn
 
 from whisper.client.backend import Client
 from whisper.client.settings import Setting
@@ -13,7 +13,6 @@ from whisper.ui.window import MainWindow
 from whisper.ui.theme import Palette
 from whisper.client.handlers import Handlers
 from whisper.components.root import Root
-from whisper.components.conn_init_form import ConnInitFormDialog
 from whisper.components.splash_screen import SplashWindow
 from whisper.packet.v1 import ExitV1Packet, ExitReason
 from whisper.typing import (
@@ -46,7 +45,7 @@ class App(Client, MainWindow):
         Client.__init__(self, config=setting.cfg, conn=conn)
 
         self.root = Root(self)
-        self.thread = threading.Thread(target=self._run_backend, name="BackendThread")
+        self.thread = threading.Thread(target=self.run_backend, name="BackendThread")
         self.title(title)
         self.minsize(200, 200)
         self.configure_app()
@@ -59,8 +58,8 @@ class App(Client, MainWindow):
         self.set_palette(self.setting.theme.palette.base, **palette_opts)
         self.set_theme(self.setting.theme)
         self.set_font(**self.setting.theme.font)
-        self.splash.setup()
         self.setup_root()
+        self.splash.setup()
 
     def setup_root(self):
         """Setups the root widget of the window and its children."""
@@ -72,28 +71,34 @@ class App(Client, MainWindow):
         """Refrence to the instance object (or itself)."""
         return self
 
-    def mainloop(self, n: int = 0):
+    def run(self):
         """Starts the application."""
         self.handle_signals()
-        # self.after(1000, self.run)
-        logger.info("running mainloop")
+        self.run_thread()
+        self.splash.show_window()
         try:
-            MainWindow.mainloop(self, n)
+            self.mainloop()
         except BaseException as ex:
             logger.exception(str(ex))
             self.shutdown(ExitReason.EXCEPTION)
         finally:
             logger.info("mainloop exited")
 
-    def _run_backend(self):
-        """Starts the backend. This should be running inside `App.thread`."""
+    def mainloop(self, n: int = 0):
+        logger.info("mainloop running")
+        return MainWindow.mainloop(self, n)
+
+    def run_backend(self):
+        """Backend thread target callback."""
+        if self.thread != threading.current_thread():
+            logger.warning("application backend is running in another thread")
         if self.run_main(self.main) is None:
             logger.info("eventloop exited")
         else:
             logger.info("eventloop exited due to exception")
 
-    def run(self):
-        """Starts the backend thread."""
+    def run_thread(self):
+        """Starts the backend thread safely."""
         tname = self.thread.name
         if not self.thread.is_alive():
             self.thread.start()
@@ -104,7 +109,6 @@ class App(Client, MainWindow):
     async def main(self):
         """Backend lifecycle."""
         self.open_connection()
-        self.init_connection()
         await Client.main(self)
         if reason := self.stop_main_result():
             packet = ExitV1Packet.request(reason)
@@ -146,21 +150,6 @@ class App(Client, MainWindow):
             packet = await self.recvq.get()
             handler = self.handlers[packet.version()][packet.unique_key()]
             handler(packet)
-
-    def init_connection(self,
-        values: Dict[str, str] | None = None,
-        errors: Dict[str, str] | None = None,
-    ):
-        """Opens a dialogue box for required details."""
-
-        def callback(**kwargs):
-            nonlocal self, dialog
-            Client.init_connection(self, **kwargs)
-            dialog.close()
-
-        dialog = ConnInitFormDialog(self, callback)
-        dialog.setup(values or {}, errors or {})
-        dialog.focus_set()
 
     def initial_tasks(self):
         return super().initial_tasks() | { self.handler_coro }

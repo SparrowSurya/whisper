@@ -5,7 +5,6 @@ This modules provides packet-v1 abstract class and related objects.
 import struct
 import logging
 from enum import IntEnum, auto
-from functools import cached_property
 from typing import Awaitable, Callable
 
 from whisper.packet import Packet, PacketRegistery
@@ -78,7 +77,7 @@ class PacketV1(Packet):
 
     def to_stream(self) -> bytes:
         """Convert packet into stream of bytes."""
-        size_limit = self.data_size_limit
+        size_limit = self.data_size_limit()
         data_size = len(self.data)
         if data_size > size_limit:
             msg = (
@@ -93,8 +92,8 @@ class PacketV1(Packet):
         status = struct.pack("B", (self.status & 0x0F) << 4)
         return version + type_ + length + status + self.data
 
-    @cached_property
-    def data_size_limit(self) -> int:
+    @staticmethod
+    def data_size_limit() -> int:
         """Maximum bytes of data supported."""
         metadata = 1 + 1 + 2 + 1
         return 0xFFFF - metadata

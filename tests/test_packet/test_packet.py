@@ -1,6 +1,6 @@
-import asyncio
 import unittest
 
+from whisper.test_utils import stream_reader
 from whisper.packet import PacketRegistery
 from .packet_class import TestPacket
 
@@ -15,15 +15,8 @@ class TestPacketInstanceFromStream(unittest.IsolatedAsyncioTestCase):
     def tearDownClass(cls):
         del PacketRegistery.packets[TestPacket.version()]
 
-    def read_data(self, n: int):
-        return b"\x00" * n
-
-    async def reader(self, n: int):
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self.read_data, n)
-
     async def test_should_provide_instance(self):
-        p = await TestPacket.from_stream(self.reader)
+        p = await TestPacket.from_stream(stream_reader(b"\x00\x00"))
         self.assertIsInstance(p, TestPacket)
 
 

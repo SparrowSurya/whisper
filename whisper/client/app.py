@@ -64,7 +64,7 @@ class App(Client, MainWindow):
     def setup_root(self):
         """Setups the root widget of the window and its children."""
         self.root.setup()
-        self.root.pack(fill="both", expand="true")
+        self.root.pack(fill="both", expand=1)
 
     @property
     def app(self) -> Self:

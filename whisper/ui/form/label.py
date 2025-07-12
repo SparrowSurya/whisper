@@ -21,7 +21,11 @@ class Asterisk(Label):
 
     @classmethod
     def default_colorscheme(cls):
-        return { **Label.default_colorscheme(), "foreground": "red" }
+        return {
+            **Label.default_colorscheme(),
+            "foreground": "red",
+            "background": "base",
+        }
 
 
 class FormLabel(Container):
@@ -42,6 +46,13 @@ class FormLabel(Container):
         self.text.pack(side="left")
         self.asterisk.pack(side="left")
 
+    @classmethod
+    def default_colorscheme(cls):
+        return {
+            **super().default_colorscheme(),
+            "background": "base",
+        }
+
 
 class FormErrorLabel(Label):
     """Custom form error label."""
@@ -54,4 +65,8 @@ class FormErrorLabel(Label):
 
     @classmethod
     def default_colorscheme(cls) -> Mapping[_ColorAttr, _PaletteOpts]:
-        return { **Label.default_colorscheme(), "foreground": "red" }
+        return {
+            **Label.default_colorscheme(),
+            "foreground": "red",
+            "background": "base",
+        }

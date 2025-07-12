@@ -32,9 +32,14 @@ class ConnInitForm(Container, BaseForm):
         BaseForm.setup(self, values, errors)
         self.username.setup()
         self.submit.setup()
-        self.username.label.pack(fill="x", pady=(8, 4))
-        self.username.input.pack(fill="x", pady=(4, 0))
-        self.username.error.pack(side="left", pady=(0, 8))
         self.username.pack(fill="x")
         self.submit.pack(side="right")
         self.username.focus_set()
+
+    @classmethod
+    def default_colorscheme(cls):
+        return {
+            **super().default_colorscheme(),
+            "background": "base",
+        }
+

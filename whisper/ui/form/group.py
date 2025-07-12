@@ -41,6 +41,9 @@ class TextFieldGroup(Container, AbstractInputField):
         self.label.setup()
         self.input.setup()
         self.error.setup()
+        self.label.pack(fill="x", pady=(8, 4))
+        self.input.pack(fill="x", pady=(4, 0))
+        self.error.pack(side="left", pady=(0, 8))
 
     @property
     def name(self) -> str:
@@ -68,3 +71,10 @@ class TextFieldGroup(Container, AbstractInputField):
 
     def reset(self, value: str | None = None):
         self.input.reset("" if value is None else value)
+
+    @classmethod
+    def default_colorscheme(cls):
+        return {
+            **super().default_colorscheme(),
+            "background": "base",
+        }

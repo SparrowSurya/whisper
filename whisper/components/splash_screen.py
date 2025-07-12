@@ -2,7 +2,7 @@
 This module provides the splash screen for the client application.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Mapping
 
 from whisper.ui import Window, Label, Container
 from whisper.components.conn_init_form import ConnInitForm
@@ -22,6 +22,13 @@ class SplashRoot(Container):
         # TODO: layout
         self.heading = Label(self, text="Initialize")
         self.form = ConnInitForm(self, submit_cb=on_submit)
+
+    def setup(self):
+        super().setup()
+        self.heading.setup()
+        self.form.setup()
+        self.heading.pack(fill="x")
+        self.form.pack(fill="x")
 
     def setup(self):
         super().setup()
@@ -45,9 +52,18 @@ class SplashWindow(Window):
 
     def setup(self):
         super().setup()
-        self.root.pack(fill="both", expand=1)
         self.root.setup()
+        self.root.pack(expand=1, fill="x", padx=40, anchor="center")
         self.center_window(320, 240)
+        self.show_window()
+        self.app.hide_window()
+
+    def open_window(self,
+        values: Dict[str, Any] | None = None,
+        errors: Dict[str, Any] | None = None,
+    ):
+        """Open the window again"""
+        self.root.form.setup(values, errors)
         self.show_window()
         self.app.hide_window()
 
@@ -64,9 +80,7 @@ class SplashWindow(Window):
         self.app.init_connection(**kwargs)
         self.hide_window()
 
-    @classmethod
-    def default_colorscheme(cls):
-        return {
-            **super().default_colorscheme(),
-            "background": "accent",
-        }
+    def on_form_submit(self, **kwargs):
+        """Handle conn init form submit."""
+        self.app.init_connection(**kwargs)
+        self.hide_window()
